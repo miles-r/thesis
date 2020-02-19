@@ -1,0 +1,117 @@
+ID 	Station Name 	Location 	Latitude 	Longitude 	Elev. (ft) 	First O	first_year	Last Ob	s.	Irrigation Type
+AKR02 	Akron 	USDA-ARS-GPRC 	40.1548	103.142	4537	Jul 1,	1992	Feb 5,	2020	Dry land
+ALT01 	Ault 	1 mi SE Ault 	40.569	104.72	4910	Mar 17,	1992	Jan 9,	2020	Fully Irrigated
+AVN01 	Avondale 	1 mi SE Avondale 	38.2056	104.329	4630	Jun 4,	1992	Feb 5,	2020	Fully Irrigated
+BLA01 	Blanca 	8 mi SW Blanca 	37.3905	105.557	7755	Feb 24,	1997	Oct 2,	2018	Dry land
+BRL01 	Burlington North 	18 mi NNE Burlington 	39.4998	102.074	3900	May 7,	1992	Jan 2,	2012	Partial Irrigation
+BRL02 	Burlington South 	6 mi SE Burlington 	39.2651	102.109	4170	Jan 2,	1992	Feb 5,	2020	Dry land
+CTR01 	Center 	CSU San Luis Valley Expt Sta 	37.7067	106.144	7702	Oct 8,	1993	Jan 29,	 2020	Partial Irrigation
+CTZ01 	Cortez 	9 mi SW Cortez 	37.2246	108.673	6015	Jan 2,	1992	Dec 30,	 2019	Fully Irrigated
+DLT01 	Delta 	3 mi W Delta 	38.7345	108.119	5010	Apr 19,	1995	Feb 5,	2020	Partial Irrigation
+DVC01 	Dove Creek 	4 mi NW Dove Creek 	37.7265	108.954	6595	Oct 28,	1992	Feb 5,	2020	Dry land
+EAC01 	Eastern Adams County (landfill) 	10 mi W Last Chance 	39.7857	103.798	4907	Jul 17,	2000	Jan 9,	2020	Dry land
+FCC01 	Christman Field 	Christman air field 	40.5917	105.142	5148	Jan 1,	1	Feb 5,	2020	Dry land
+FCL01 	Fort Collins 	CSU Campus 	40.5762	105.086	4997	Jan 1,	1	Feb 5,	2020	Dry land
+FRT02 	CSU Fruita Expt Station 	2 mi ENE Fruita 	39.1803	108.699	4519	Jun 16,	1992	Nov 8,	2019	Partial Irrigation
+FTC01 	Fort Collins AERC 	Fort Collins AERC 	40.5947	105.137	5120	Feb 1,	1992	Feb 5,	2020	Partial Irrigation
+FTC03 	CSU - ARDEC 	6 mi NE Fort Collins 	40.6525	105	5110	May 8,	1992	Feb 5,	2020	Partial Irrigation
+FTL01 	Fort Lupton 	6 mi SSW Fort Lupton 	40.0011	104.849	5055	Mar 17,	1992	Feb 5,	2020	Partial Irrigation
+FTM01 	Fort Morgan 	8 mi W Fort Morgan 	40.2585	103.954	4320	Apr 21,	1995	Apr 6,	2010	Partial Irrigation
+GJC01 	Grand Junction 	3 mi NW Grand Junction 	39.1752	108.632	4869	Oct 1,	1993	May 10,	 2009	Dry land
+GLY03 	Greeley 	2.5 mi NE Greeley 	40.4394	104.647	4680	Mar 4,	1992	Jun 15,	 2010	Partial Irrigation
+HNE01 	Hoehne 	NE Trinidad 	37.2893	104.313	5625	Feb 14,	2000	Feb 5,	2020	Partial Irrigation
+HOT01 	CSU Rogers Mesa Expt Sta 	4 mi W Hotchkiss 	38.7917	107.792	5547	May 21,	1998	Sep 25,	 2019	Partial Irrigation
+HXT01 	Haxtun 	2.5 mi NW Haxtun 	40.6722	102.647	4040	Mar 27,	1997	Feb 5,	2020	Partial Irrigation
+HYK02 	Holyoke 	12 mi SE Holyoke 	40.4909	102.089	3735	Jan 2,	1992	Feb 5,	2020	Dry land
+IDL01 	Idalia 	2 mi N Idalia 	39.7312	102.302	3975	Jan 2,	1992	Feb 5,	2020	Fully Irrigated
+KRK01 	Kirk 	3 mi W Joes 	39.6554	102.621	4213	May 13,	1996	Feb 5,	2020	Partial Irrigation
+KSY01 	Kersey 1 	2 mi SE Kersey 	40.3768	104.532	4625	May 1,	1992	Jan 9,	2020	Partial Irrigation
+LAM01 	Lamar #1 	4.5 Mi S Lamar 	37.9807	102.596	3776	Aug 3,	1996	Feb 5,	2020	Dry land
+LCN01 	Lucerne 	1/4 mi SW Lucerne 	40.4756	104.707	4750	Mar 4,	1992	Feb 5,	2020	Partial Irrigation
+OTH01 	Olathe 	3 mi NE Olathe 	38.6351	107.964	5324	Jul 28,	1992	Feb 5,	2020	Partial Irrigation
+PBL01 	Pueblo (defunct) 	Pueblo 	38.2317	104.467	4710	Aug 4,	1993	May 21,	 1995	 
+PKH01 	Peckham 	3 mi ENE Peckham 	40.3125	104.727	4701	Mar 17,	1992	Jan 29,	 2020	Partial Irrigation
+RFD01 	CSU Expt Stn Rocky Ford 	2.5 mi SE Rocky Ford 	38.0385	103.695	4180	Jun 4,	1992	Feb 5,	2020	Fully Irrigated
+RFD02 	CSU Expt Stn Rocky Ford NRCS 	Moved to HLY01 	38.0385	103.695	4180	Jan 2,	1999	Jun 29,	 2005	Fully Irrigated
+SAN01 	San Acacio 	2 mi N Mesita 	37.1417	105.611	7753	Aug 12,	2000	Jan 9,	2020	Dry land
+TWC01 	Towaoc 	Ute Mtn Ute Farm 	37.1891	108.935	5319	Jun 30,	1998	Feb 5,	2020	Partial Irrigation
+VLD01 	Vineland 	13 mi SE Pueblo 	38.2235	104.461	4420	Aug 4,	1993	Oct 11,	 2010	Fully Irrigated
+WGG01 	Wiggins 06 	NNE of Wiggins 	40.3333	104.036	4447	Apr 1,	1997	Oct 31,	 2004	Partial Irrigation
+WGG02 	Wiggins 39 	ENE of Wiggins 	40.2998	103.952	4421	Apr 1,	1997	Jul 31,	 2005	Partial Irrigation
+WRY01 	Wray 	10 mi N Wray 	40.1924	102.203	3681	May 9,	1996	Jun 22,	 2013	Fully Irrigated
+YJK01 	Yellow Jacket 	2.5 mi NW Yellow Jacket 	37.5428	108.74	6900	Jan 2,	1992	Feb 5,	2020	Fully Irrigated
+YUM01 	Yuma 	6 mi E of Yuma 	40.1035	102.606	4000	May 19,	1993	Jan 1,	2010	 
+YUM02 	Yuma 	2 mi N Yuma 	40.1504	102.724	4104	May 8,	1996	Dec 19,	 2019	Fully Irrigated
+										
+BNV01 	Buena Vista 	CDW Area SW of Buena Vista 	38.8315	106.129	7900	Oct 12,	2010	Feb 5,	2020	Partial Irrigation
+BRG01 	Briggsdale 	3 mi S Briggsdale 	40.5947	104.319	4858	Jul 31,	2002	Jan 9,	2020	Dry land
+BRK01 	Bedrock 	1 mile NE of Bedrock 	38.3279	108.855	4973	Nov 7,	2013	Feb 5,	2020	Dry land
+BRL03 	Burlington 3 	4 mi NE of Burlington 	39.3374	102.196	4068	Mar 21,	2008	Feb 5,	2020	Fully Irrigated
+CBL01 	Carbondale 	Carbondale 	39.3623	107.208	6293	May 8,	2015	Feb 5,	2020	Fully Irrigated
+CBN01 	Collbran 	3 mi SW of Collbran 	39.1993	107.99	6555	Mar 30,	2018	Feb 5,	2020	Fully Irrigated
+CCR01 	Cherry Creek Res 	2 miles south of Cherry Creek Res 	39.6059	104.834	5632	Jul 25,	2019	Feb 5,	2020	Dry land
+CDG01 	Cedaredge 	Cedaredge 	38.9142	107.932	6404	Feb 18,	2006	May 6,	2015	Fully Irrigated
+CHT01 	Chatfield at South Platte Res 	1.2 mi north of Chatfield Res 	39.5741	105.054	5414	Dec 4,	2019	Feb 5,	2020	Dry land
+CKP01 	Cherokee Park 	1 mile west of US 287 on Road 80C 	40.8263	105.267	5956	Jul 25,	2014	Feb 5,	2020	Dry land
+CLK01 	Clark 	1 mile WSW of Clark 	40.7043	106.934	7221	Apr 25,	2018	Feb 5,	2020	Fully Irrigated
+CNN01 	Canon City 	East of Canon City 	38.4425	105.176	5344	Dec 31,	2010	Feb 5,	2020	Partial Irrigation
+COW01 	Cowdrey 	9 miles north of Walden 	40.8659	106.336	7895	Jun 10,	2009	Feb 5,	2020	Fully Irrigated
+CTR02 	Center #2 	Coors Research Farm 	37.8288	106.038	7608	Oct 2,	2003	Jan 22,	 2020	Partial Irrigation
+DRG01 	Durango 	11 mi S of Durango 	37.1125	107.881	6203	May 30,	2018	Feb 5,	2020	Fully Irrigated
+EGL01 	Eagle 	2 mi SE of Eagle 	39.6308	106.782	6894	Nov 19,	2019	Feb 5,	2020	Fully Irrigated
+EKT01 	Eckert 	0.5 miles west of Eckert, CO 	38.8398	107.973	5522	May 7,	2015	Jan 28,	 2020	Fully Irrigated
+FRT01 	CSU Fruita Expt 	2 mi ENE of Fruita 	39.1667	108.75	4500	Jan 1,	2008	Dec 30,	 2008	 
+FRT03 	CSU Fruita Exp Station 	2 mi ENE Fruita 	39.183	108.697	4605	Sep 25,	2019	Feb 5,	2020	Partial Irrigation
+FWL01 	Fowler 	Fowler Golf Course 	38.1351	104.032	4335	Mar 17,	2005	Feb 5,	2020	Fully Irrigated
+GBY01 	Granby 	1 mile N of Granby 	40.1047	105.943	7911	Apr 23,	2018	Feb 5,	2020	Fully Irrigated
+GLY04 	Greeley 4 	1.5 mi N of Greeley Airport 	40.4487	104.638	4683	Jun 5,	2008	Feb 5,	2020	Fully Irrigated
+GUN01 	Gunnison 	5 miles North of Gunnison 	38.6135	106.901	7894	Feb 25,	2015	Feb 5,	2020	Fully Irrigated
+GYP01 	Gypsum 	1 mi S Gypsum 	39.6344	106.947	6470	Oct 11,	2017	Feb 5,	2020	Partial Irrigation
+HEB01 	Hebron 	13 miles SW of Walden 	40.5455	106.388	8170	Jun 10,	2009	Feb 5,	2020	Fully Irrigated
+HLY01 	Holly 	5 mi NW Holly 	38.07	102.09	3636	Sep 27,	2001	Feb 5,	2020	Partial Irrigation
+HLY02 	Holly #2 	8.5 mi NW Holly 	38.1361	102.241	3570	May 21,	2005	Feb 5,	2020	Fully Irrigated
+HOT02 	CSU Rogers Mesa Research Sta 	CSU Rogers Mesa Research Station 	38.7985	107.788	5631	Mar 19,	2019	Feb 5,	2020	Fully Irrigated
+HRT01 	Heartstrong 	12 mi SSE Yuma 	39.9552	102.625	4129	May 30,	2005	Feb 28,	 2008	Partial Irrigation
+HYD01 	Hayden 	4 mi E of Hayden 	40.499	107.181	6454	Nov 16,	2011	Jan 11,	 2020	Fully Irrigated
+IGN01 	Ignacio 	4 mi NW of Ignacio, CO 	37.1383	107.707	6617	Apr 20,	2018	Feb 5,	2020	Fully Irrigated
+ILF01 	Iliff 	1.5 mi NE of Iliff 	40.7678	103.045	3822	Feb 2,	2008	Feb 5,	2020	Dry land
+JFN01 	Jefferson 	1 mile SW of Jefferson,CO 	39.3509	105.815	9460	Jan 1,	2012	Feb 5,	2020	Dry land
+KLN01 	Kline 	2 mi SW of Kline, CO 	37.1261	108.146	6755	Apr 12,	2018	Feb 5,	2020	Partial Irrigation
+KRM01 	Kremmling 	7 miles NE of Kremmling 	40.1154	106.283	7534	Apr 30,	2018	Feb 5,	2020	Fully Irrigated
+KSY02 	Kersey 2 	4 mi SE Kersey 	40.3629	104.478	4563	Jan 1,	2015	Feb 5,	2020	Partial Irrigation
+LAM02 	Lamar #2 	7 mi NNE Lamar 	38.1734	102.559	3736	Jul 31,	2002	Jun 14,	 2005	Dry land
+LAM03 	Lamar #3 	10 mi SW Lamar 	37.9798	102.713	3918	Jul 31,	2002	Feb 5,	2020	Dry land
+LAM04 	Lamar #4 	4.5 mi NNE Lamar 	38.1539	102.599	3705	May 11,	2005	Feb 5,	2020	Fully Irrigated
+LAR01 	Larand 	8 miles south of Walden 	40.6126	106.3	8252	Jun 10,	2009	Feb 5,	2020	Fully Irrigated
+LJR01 	LaJara 	2 mi S LaJara 	37.2443	105.972	7595	May 19,	2005	Jan 9,	2020	Partial Irrigation
+LJT01 	LaJunta 	11 mi NE LaJunta 	38.0778	103.366	3960	Mar 17,	2005	Feb 5,	2020	Fully Irrigated
+LSL01 	La Salle 	4 mi SE of La Salle 	40.3349	104.63	4676	Feb 10,	2012	Feb 5,	2020	Partial Irrigation
+MCL01 	McClave (was Las Animas) 	1 mi NW McClave 	38.1478	102.859	3895	Mar 17,	2005	Feb 5,	2020	Fully Irrigated
+MKR01 	Meeker 	2 miles S of Meeker 	40.0083	107.908	6342	Apr 26,	2018	Feb 5,	2020	Fully Irrigated
+MNC01 	Mancos 	3.5 Mi SW Mancos 	37.3212	108.339	6730	Oct 29,	2010	Feb 5,	2020	Fully Irrigated
+MTR01 	Montrose 	3 miles NW of Montrose 	38.547	107.914	5651	Feb 24,	2015	Feb 5,	2020	Fully Irrigated
+NWD01 	Norwood 	2 mi South of Norwood 	38.151	108.284	7000	Jun 14,	2018	Feb 5,	2020	Partial Irrigation
+ORM01 	Orchard Mesa 	Orchard Mesa 	39.0424	108.466	4700	Jan 2,	2006	Sep 24,	 2019	Partial Irrigation
+ORM02 	CSU Orchard Mesa Research Sta 	CSU Orchard Mesa Research Station 	39.0441	108.467	4700	Sep 25,	2019	Feb 5,	2020	Partial Irrigation
+OTH02 	Olathe 2 	4 mi W Olathe 	38.6135	108.069	5450	Aug 12,	2010	Dec 30,	 2016	Fully Irrigated
+PAI01 	Paoli 	RD U & 59 	40.4248	102.475	3875	Sep 26,	2001	Jan 9,	2020	Dry land
+PAN01 	Paonia 	Paonia 	38.8656	107.599	5643	  		  		 
+PGS01 	Pagosa Springs 	2 mi from Pagosa Springs 	37.277	106.983	7181	Apr 20,	2018	Feb 5,	2020	Fully Irrigated
+PKR01 	Parker 	E470 and Chambers 	39.5505	104.811	5813	Mar 12,	2015	Jul 24,	 2019	Dry land
+PNR01 	Penrose 	near L and 13th Sts. 	38.4119	104.998	5331	Oct 13,	2010	Jan 9,	2020	Fully Irrigated
+PTV01 	Platteville 	1 mi NW Platteville 	40.2278	104.835	4700	  		  		 
+SBT01 	Seibert 	Livingston CRP land south of Seibert 	39.1187	102.925	4852	Apr 2,	2015	Feb 5,	2020	Dry land
+SCM01 	Sand Creek Massacre HS 	7.5 mi NNE of Chivington 	38.5439	102.503	3963	Jul 24,	2008	Feb 5,	2020	Dry land
+SLD01 	Salida 	Near Salida 	38.5713	106.043	7227	Jul 28,	2010	Feb 5,	2020	Fully Irrigated
+SLT01 	Silt 	Silt Mesa 	39.5667	107.693	5620	May 8,	2015	Feb 5,	2020	Fully Irrigated
+STG01 	Sterling 	Sterling 	40.4632	103.028	4472	Mar 24,	2006	Feb 5,	2020	Dry land
+STN01 	Stratton 	Stratton 	39.2987	102.522	4321	Apr 2,	2006	Feb 5,	2020	Dry land
+STT01 	Stonington 	Stonington 	37.1613	102.122	3841	Apr 2,	2006	Jan 8,	2008	Dry land
+UWR70 	United Water 	West of Wiggins 	40.3806	104.35	4682	Mar 3,	2011	Feb 11,	 2015	Dry land
+WAV01 	Waverly 	NW of Douglas Reservoir 	40.7102	105.103	5229	Feb 17,	2012	Apr 18,	 2012	Dry land
+WCF01 	Westcliffe 	2 mi NW Westcliffe 	38.1504	105.499	7734	Sep 20,	2010	Feb 5,	2020	Fully Irrigated
+WFD01 	Wolford Mtn Reservoir 	5 mi NNW Kremmling 	40.1387	106.415	7520	Nov 30,	2004	Feb 5,	2020	Dry land
+WLS01 	Walsh 	Plainsman Research Center in Walsh, CO 	37.383	102.294	3974	Apr 11,	2012	Jan 9,	2020	Dry land
+WLT01 	Wellington 	I25 & 58.5 Rd 	40.6762	104.997	5144	Aug 8,	2005	Jun 15,	 2010	Fully Irrigated
+WRY02 	Wray 2 	Lenz Farm north of Wray, CO 	40.2187	102.265	3736	Apr 1,	2015	Feb 5,	2020	Fully Irrigated
+YUC01 	Yucca House 	Mesa Verde Natl Monument 	37.2478	108.687	5975	Aug 23,	2002	Feb 5,	2020	Dry land

@@ -1,0 +1,148 @@
+---
+title: "Summary Stats"
+author: "Miles Rollison"
+date: "2/11/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F, warning = F)
+
+library(reticulate)
+Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+
+library(tidyverse)
+library(magrittr)
+library(gt)
+```
+
+```{r}
+hay = read_csv(paste0(fakepath, "thesis/Data/AMS/hay_co_monthly_dm.csv"))
+
+grass = hay %>% filter(class == "GRASS")
+alfalfa = hay %>% filter(class == "ALFALFA")
+
+corn = read_csv(paste0(fakepath, "thesis/Data/AMS/corn_co_monthly_dm.csv"))
+corn %<>% filter( !is.na(price_cwt))
+```
+
+```{r}
+### Make more generalized to accept different grouping variables as function argument
+
+get_sumstats = function(df, v) {
+  all = df %>% summarise_at(v, list(
+      N = length,
+      Mean = mean,
+      SD = sd,
+      Min = min,
+      Median = median,
+      Max = max))
+  all[2:ncol(all)] %<>% round(2)
+  all %<>% mutate(location = "Colorado") %>% select(location, everything())
+  
+  location = df %>% group_by(location) %>% summarise_at(v, list(
+      N = length,
+      Mean = mean,
+      SD = sd,
+      Min = min,
+      Median = median,
+      Max = max))
+  location[2:ncol(location)] %<>% round(2)
+  
+  grade = df %>% group_by(grade) %>% summarise_at(v, list(
+      N = length,
+      Mean = mean,
+      SD = sd,
+      Min = min,
+      Median = median,
+      Max = max))
+  grade[2:ncol(grade)] %<>% round(2)
+  
+  grade %<>% rename(location = grade)
+  
+  year = df %>% group_by(year) %>% summarise_at(v, list(
+      N = length,
+      Mean = mean,
+      SD = sd,
+      Min = min,
+      Median = median,
+      Max = max))
+  year[2:ncol(year)] %<>% round(2)
+  
+  year %<>% mutate(year = year %>% as.character()) %>% rename(location = year)
+  
+  tbl = bind_rows(all, location, grade, year)
+  tbl %<>% rename(' ' = location)
+
+  return(tbl)
+}
+```
+
+```{r}
+all = corn %>% summarise_at(vars(price_cwt), list(
+    N = length,
+    Mean = mean,
+    SD = sd,
+    Min = min,
+    Median = median,
+    Max = max))
+all[2:ncol(all)] %<>% round(2)
+all %<>% mutate(location = "Colorado") %>% select(location, everything())
+
+location = corn %>% group_by(location) %>% summarise_at(vars(price_cwt), list(
+    N = length,
+    Mean = mean,
+    SD = sd,
+    Min = min,
+    Median = median,
+    Max = max))
+location[2:ncol(all)] %<>% round(2)
+
+transmode = corn %>% group_by(transmode) %>% summarise_at(vars(price_cwt), list(
+    N = length,
+    Mean = mean,
+    SD = sd,
+    Min = min,
+    Median = median,
+    Max = max))
+transmode[2:ncol(all)] %<>% round(2)    
+    
+transmode %<>% rename(location = transmode)
+
+tbl = bind_rows(all, location, transmode) %>% rename(`  `= location)
+
+tbl %>% 
+    gt() %>% 
+    tab_header(title = "Table 1: Descriptive Statistics for Corn Price - $/Ton",
+               subtitle = "Colorado, 2000 - 2018") %>% 
+    tab_row_group(group = "Area", rows = seq(from = 1, to = 7)) %>% 
+    tab_row_group("Transportation Mode", rows = c(8,9))
+```
+
+```{r}
+tbl_a = get_sumstats(alfalfa, vars(bid_avg))
+tbl_a %>% 
+    gt() %>% 
+    tab_header(title = "Table 2: Descriptive Statistics for Alfalfa Price - $/Ton",
+               subtitle = "Colorado, 2000 - 2018") %>% 
+    tab_row_group(group = "Area", rows = seq(from = 1, to = 6)) %>% 
+    tab_row_group("Grade", rows = seq(from = 7, to = 12)) %>% 
+    tab_row_group("Year", rows = seq(from = 13, to = nrow(tbl_a)) )
+```
+
+```{r}
+tbl_g = get_sumstats(grass, vars(bid_avg))
+tbl_g %>% 
+    gt() %>% 
+    tab_header(title = "Table 3: Descriptive Statistics for Grass Hay Price - $/Ton",
+               subtitle = "Colorado, 2000 - 2018") %>% 
+    tab_row_group(group = "Area", rows = seq(from = 1, to = 6)) %>% 
+    tab_row_group("Grade", rows = seq(from = 7, to = 9)) %>% 
+    tab_row_group("Year", rows = seq(from = 10, to = nrow(tbl_g)) )
+    
+```
+
+
+

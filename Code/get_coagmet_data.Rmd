@@ -1,0 +1,124 @@
+---
+title: "Weather Variables"
+author: "Miles Rollison"
+date: "2/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F)
+
+library(tidyverse)
+library(magrittr)
+library(reticulate)
+
+Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+```
+
+```{r}
+stations = tribble(~station, ~county, ~region,
+                   'FTC03', 'Larimer', 'Northeast',
+                   #'ALT01', 'Weld', 'Northeast',
+                   'KSY01', 'Weld', 'Northeast',
+                   #'FTL01', 'Weld', 'Northeast',
+                   'EAC01', 'Adams', 'EastCentral',
+                   'YUM02', 'Yuma', 'Northeast',
+                   #'KRK01', 'Yuma', 'Northeast',
+                   #'HXT01', 'Phillips', 'Northeast',
+                   #'HYK02', 'Phillips', 'Northeast',
+                   'AKR02', 'Washington', 'Northeast',
+                   'BRL02', 'Kit Carson', 'EastCentral',
+                   'LAM01', NA, 'Southeast',
+                   'RFD01', NA, 'Southeast',
+                   'HNE01', NA, 'Southeast',
+                   'CTZ01', NA, 'Southwest',
+                   'YJK01', NA, 'Southwest',
+                   'TWC01', NA, 'Southwest',
+                   'HOT02', NA, 'Mountain Area NW',
+                   'FRT02', NA, 'Mountain Area NW',
+                   'CTR01', NA, 'SLV',
+                   'BLA01', NA, 'SLV'
+                   )
+write_csv(stations, paste0(fakepath, "thesis/Data/CoAgMet/station_county_info.csv"))
+```
+
+```{r pythonvars}
+directory = paste0(fakepath, "thesis/Data/CoAgMet/")
+stations = stations$station
+```
+
+```{python getdata}
+import urllib.request
+import os
+
+os.chdir(r.directory)
+stations = r.stations
+
+####
+#
+#stations = ["FTC03", "ALT01","KSY02", "FTL01", "EAC01", "YUM02", "KRK01", "HXT01", "HYK02", "AKR02", "BRL02"]
+
+####
+
+variables = "station, date, mean_temp, max_temp, max_temp_time, min_temp, min_temp_time, vapor_press, max_rh, max_rh_time,min_rh, min_rh_time, solar_rad, wind_run, precip, max_soil_temp_5, max_soil_temp_5_time, min_soil_temp_5, min_soil_temp_5_time, max_soil_temp_15, max_soil_temp_15_time, min_soil_temp_15, min_soil_temp_15_time, voltage, year, max_wind, max_wind_time, max_wind_dir, et_asce, et_pk, sum_et_asce\n"
+
+types = "variableTypes, 01-01-1001, 99.99, 99.99, 23:59:59, 99.99, 23:59:59, 99.99, 99.99, 23:59:59, 99.99, 23:59:59, 99.99, 99.99, 99.99, 99.99, 23:59:59, 99.99, 23:59:59,99.99, 23:59:59, 99.99, 23:59:59, 99.99, 1000L, 99.99, 23:59:59, 999.999, 99.99, 99.99, 99.99\n"
+
+coagmet_before= "https://coagmet.colostate.edu/rawdata_results.php?start_year=1999&start_month=01&start_day=01&station="
+#station_code = "STG01"
+coagmet_after = "&end_year=2020&end_month=02&end_day=01&data_type%5B%5D=1&qc=1&etr=1"
+
+#link = coagmet_before + station_code + coagmet_after
+
+for station in stations:
+    station_code = station 
+    filename = station + '.csv'
+    link = coagmet_before + station_code + coagmet_after
+
+    f = urllib.request.urlopen(link)
+    file = f.read()
+
+    csv = str(file).replace('\\n', '\n')
+    csv = variables + types + csv[2: len(csv)-1]
+    outfile = open(filename, 'w')
+    outfile.write(csv)
+    outfile.close()
+```
+
+
+```{r verify}
+tbl = read_csv(paste0(fakepath, "thesis/Data/CoAgMet/AKR02.csv"))
+tbl
+```
+
+## Variables    
+    Datetime (in the format YYYY-MM-DD)
+    Mean Temperature (Celsius)
+    Maximum Temperature (Celsius)
+    Time of Maximum Temperature (HH:MM:SS)
+    Minimum Temperature (Celsius)
+    Time of Minimum Temperature (HH:MM:SS)
+    Vapor Pressure (kPa)
+    Maximum Relative Humidity (Fraction)
+    Time of Maximum Relative Humidity (HH:MM:SS)
+    Minimum Relative Humidity (Fraction)
+    Time of Minimum Relative Humidity (HH:MM:SS)
+    Solar Radiation (MJ/m^2)
+    Wind_Run (km/day)
+    Precipitation (millimeters)
+    Maximum Soil Temperature at 5cm (Celsius)
+    Time of Maximum Soil Temperature at 5cm (HH:MM:SS)
+    Minimum Soil Temperature at 5cm (Celsius)
+    Time of Minimum Soil Temperature at 5cm (HH:MM:SS)
+    Maximum Soil Temperature at 15cm (Celsius)
+    Time of Maximum Soil Temperature at 15cm (HH:MM:SS)
+    Minimum Soil Temperature at 15cm (Celsius)
+    Time of Minimum Soil Temperature at 15cm (HH:MM:SS)
+    Battery Voltage
+    Year of data
+    Maximum daily wind gust (m/s)
+    Time of maximum daily wind gust (min into day NOT HH:MM as other max/min)
+    Direction of maximum daily wind gust (deg)
+    ASCE Reference Evapotranspiration Model (mm)*
+    Penman-Kimberly Ref. Evapotranspiration Model (mm)*
+    Summed hourly ASCE Ref. ET (mm)*
