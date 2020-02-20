@@ -1,0 +1,74 @@
+---
+title: "SPEI"
+author: "Miles Rollison"
+date: "2/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F)
+
+#library(reticulate)
+#Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+
+library(tidyverse)
+library(magrittr)
+
+directory = function(x){
+    paste0(fakepath, x)
+}
+```
+
+```{r}
+rowMin = function(x){
+    m = c()
+    for (i in 1:nrow(x)) {
+       m = c(m, min(x[i,]))
+    }
+    return(m)
+}
+
+rowMax = function(x){
+    m = c()
+    for (i in 1:nrow(x)) {
+       m = c(m, max(x[i,]))
+    }
+    return(m)
+}
+```
+
+```{r}
+da_folder = directory("thesis/Data/Drought Risk Atlas/")
+regions = list.files(da_folder)
+
+for (folder in regions) {
+    files = list.files(paste0(da_folder, folder))
+    stations = gsub("dra_export_\\d+|.csv", '', files)
+    previous = 0
+    for (csv in files) {
+        df = read_csv(paste0(da_folder, folder, '/', csv), col_types = "cdli") %>% select(-HasNoData)
+        varname = paste0("SPEI_", gsub("dra_export_\\d+|.csv", '', csv))
+        colnames(df)[2] = varname
+        if(!previous) assign("region_df" , df, .GlobalEnv)
+        else region_df %<>% full_join(df)
+        previous = previous + 1
+    }
+    index = ncol(region_df)
+    region_df %<>% select(Date, TimeStep, everything())
+    region_df %<>% mutate(SPEI_avg = region_df[3:index] %>% rowMeans(na.rm = T),
+                          SPEI_min = rowMin(region_df[3:index]),
+                          SPEI_max = rowMax(region_df[3:index]),
+                          location = eval(folder),
+                          Date = as.Date(Date, "%m/%d/%y"),
+                          year = lubridate::year(Date),
+                          month = lubridate::month(Date))
+    assign(eval(folder), region_df, .GlobalEnv)
+    #cor(region_df[3:index]) %>% print
+}
+```
+
+```{r}
+spei %<>% arrange(location,  TimeStep, Date)
+
+write_csv(spei, directory("thesis/Data/Drought Risk Atlas/spei.csv"))
+```
