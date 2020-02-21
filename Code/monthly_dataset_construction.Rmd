@@ -44,7 +44,8 @@ hay %<>% separate(location, into = c("location", "state"), sep = ', ') %>%
                TRUE ~ location)) %>% 
     rename(grade = `grade description`) %>% 
     select(year, month, everything(), -variety, -transmode, -`pricing point`, -`delivery period`) %>% 
-    arrange(location, year, month)
+    arrange(location, year, month) %>% 
+    filter(quality != "ALFALFA_NA")
 
 hay %<>% group_by(location, quality) %>%
     mutate(price_lag = lag(bid_avg),
@@ -88,29 +89,35 @@ dm %<>% group_by(year, month, County) %>%
 #Join with region classifications
 dm %<>% ungroup %>% mutate(County = str_replace(County, " County", ''),
                year = as.integer(year),
-               month = as.integer(month)) %>% 
-    full_join(counties) 
+               month = as.integer(month),
+               D2plus = D2 + D3 + D4) %>% 
+    full_join(counties) %>% 
+    mutate_if(is.double, function(x) x / 1000)
 
 dmh = dm %>% group_by(year, month, ams_hay_region) %>% 
-    summarise_if(is.numeric, mean) %>% 
+    summarise_if(is.numeric, sum) %>% 
     select(-FIPS) %>% 
     arrange(year, month)
 
 dmc = dm %>% group_by(year, month, ams_corn_region)  %>% 
-    summarise_if(is.numeric, mean) %>% 
+    summarise_if(is.numeric, sum) %>% 
     select(-FIPS) %>% 
     arrange(year, month) 
 
-dmh %<>% group_by(ams_hay_region) %>% make_lags( vars(D0, D1, D2, D3, D4), 4)
-dmc %<>% group_by(ams_corn_region) %>% make_lags( vars(D0, D1, D2, D3, D4), 4)
+dmh %<>% group_by(ams_hay_region) %>% make_lags( vars(D0, D1, D2, D3, D4, D2plus), 4)
+dmc %<>% group_by(ams_corn_region) %>% make_lags( vars(D0, D1, D2, D3, D4, D2plus), 4)
 ```
 
 ```{r join}
 hay %<>% full_join(dmh, by = c("location" = "ams_hay_region", "year", "month"))
-corn %<>% full_join(dmc, by = c("location" = "ams_corn_region", "year", "month"))
+corn %<>% full_join(dmc, by = c("location" = "ams_corn_region", "year", "month")) %>% arrange(year, month, location)
+
+rm(dm, dmc, dmh, counties)
 ```
 
 ```{r write}
-write_csv(hay, paste0(fakepath, "thesis/Data/AMS/hay_co_monthly_dm.csv"))
-write_csv(corn, paste0(fakepath, "thesis/Data/AMS/corn_co_monthly_dm.csv"))
+write_csv(hay, paste0(fakepath, "thesis/Data/Constructed Datasets/hay_co_monthly_dm.csv"))
+write_csv(corn, paste0(fakepath, "thesis/Data/Constructed Datasets/corn_co_monthly_dm.csv"))
+
+rm(hay, corn)
 ```

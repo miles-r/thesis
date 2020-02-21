@@ -40,35 +40,56 @@ rowMax = function(x){
 ```{r}
 da_folder = directory("thesis/Data/Drought Risk Atlas/")
 regions = list.files(da_folder)
-
+start_index = 4
 for (folder in regions) {
     files = list.files(paste0(da_folder, folder))
     stations = gsub("dra_export_\\d+|.csv", '', files)
     previous = 0
     for (csv in files) {
-        df = read_csv(paste0(da_folder, folder, '/', csv), col_types = "cdli") %>% select(-HasNoData)
+        df = read_csv(paste0(da_folder, folder, '/', csv), col_types = "cdli") %>%
+            mutate(Date = gsub(" 12:00:00 AM", '', Date)) %>%
+            separate(Date, into = c("month", "day", "year"), sep = '/') %>%
+            mutate(year = year %>% as.integer,
+                   month = month %>% as.integer) %>% 
+            select(year, month, TimeStep, SPEI, -day, -HasNoData)
+
         varname = paste0("SPEI_", gsub("dra_export_\\d+|.csv", '', csv))
-        colnames(df)[2] = varname
-        if(!previous) assign("region_df" , df, .GlobalEnv)
-        else region_df %<>% full_join(df)
-        previous = previous + 1
+        colnames(df)[start_index] = varname
+        if(!previous){
+            assign("region_df" , df, .GlobalEnv)
+            previous = 1
+        }
+        else region_df %<>% full_join(df, by = c("year", "month", "TimeStep"))
     }
-    index = ncol(region_df)
-    region_df %<>% select(Date, TimeStep, everything())
-    region_df %<>% mutate(SPEI_avg = region_df[3:index] %>% rowMeans(na.rm = T),
-                          SPEI_min = rowMin(region_df[3:index]),
-                          SPEI_max = rowMax(region_df[3:index]),
+    end_index = ncol(region_df)
+    region_df %<>% mutate(id = 1:nrow(region_df) %>% as.double,
+                          SPEI_avg = rowMeans(region_df[start_index:end_index], na.rm = T),
+                          SPEI_min = rowMin(region_df[start_index:end_index]),
+                          SPEI_max = rowMax(region_df[start_index:end_index]),
                           location = eval(folder),
-                          Date = as.Date(Date, "%m/%d/%y"),
-                          year = lubridate::year(Date),
-                          month = lubridate::month(Date))
+                          TimeStep = TimeStep %>% as.integer) %>% 
+        select(year, month, location, everything()) %>% 
+        arrange(TimeStep, year, month)
+        
+    lags = region_df  %>%
+        group_by(TimeStep) %>%
+        transmute_if(is.double, lag)
+    lags %<>% select(id, everything()) %>%
+        mutate(id = id + 1)
+    region_df %<>% full_join(lags, by = "id", suffix = c("", "_lag1")) 
+    
     assign(eval(folder), region_df, .GlobalEnv)
-    #cor(region_df[3:index]) %>% print
+    #cor(region_df[start_index:index]) %>% print
 }
 ```
 
 ```{r}
-spei %<>% arrange(location,  TimeStep, Date)
+spei = bind_rows(EC, NE, NWMA, SE, SLV, SW)
+spei %<>% arrange(location,  TimeStep, year, month)
 
-write_csv(spei, directory("thesis/Data/Drought Risk Atlas/spei.csv"))
+write_csv(spei, directory("thesis/Data/Constructed Datasets/spei.csv"))
+```
+
+```{r}
+
 ```

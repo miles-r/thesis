@@ -1,0 +1,104 @@
+---
+title: "CoAgMet"
+author: "Miles Rollison"
+date: "2/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F)
+
+#library(reticulate)
+#Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+
+library(tidyverse)
+library(magrittr)
+
+directory = function(x){
+    paste0(fakepath, x)
+}
+```
+
+```{r}
+rowMin = function(x){
+    m = c()
+    for (i in 1:nrow(x)) {
+       m = c(m, min(x[i,]))
+    }
+    return(m)
+}
+
+rowMax = function(x){
+    m = c()
+    for (i in 1:nrow(x)) {
+       m = c(m, max(x[i,]))
+    }
+    return(m)
+}
+```
+
+```{r message=F}
+cam_folder = directory("thesis/Data/CoAgMet/stations/")
+regions = list.files(cam_folder)
+start_index = 5
+
+for (folder in regions) {
+    files = list.files(paste0(cam_folder, folder))
+    stations = gsub(".csv", '', files)
+    previous = 0
+    for (csv in files) {
+        df = read_csv(paste0(cam_folder, folder, '/', csv)) %>%
+            select(station, date, precip) %>% 
+            filter(station != "variableTypes")
+        varname = paste0("precip_", gsub(".csv", '', csv))
+        colnames(df)[3] = varname
+        df %<>% select(-station)
+        if(!previous) {
+            assign("region_df" , df, .GlobalEnv)
+            previous = 1
+        }
+        else region_df %<>% full_join(df, by = "date") 
+       
+    }
+    
+    #region_df %<>% select(Date, TimeStep, everything())
+    region_df %<>% mutate(year = lubridate::year(date) %>% as.integer,
+                          month = lubridate::month(date) %>% as.integer,
+                          location = eval(folder),
+                          id = 1:nrow(region_df) %>% as.double) %>%
+        group_by(id, year, month, location) %>%
+        summarise_if(is.double, function(x){sum(x, na.rm = T) }) %>% 
+        ungroup()
+    end_index = ncol(region_df)
+    region_df$precip_avg = region_df[start_index:end_index] %>% rowMeans( na.rm = T)
+    region_df$precip_min = region_df[start_index:end_index] %>% rowMin()
+    region_df$precip_max = region_df[start_index:end_index] %>% rowMax()
+    
+    region_df %<>% arrange(year, month)
+    
+    lags = region_df  %>%
+        transmute_if(is.double, lag)
+    lags %<>% select(id, everything()) %>%
+        mutate(id = id + 1)
+    region_df %<>% full_join(lags, by = c("id"), suffix = c("", "_lag1")) 
+    
+    assign(eval(folder), region_df, .GlobalEnv)
+    #cor(region_df[3:end_index]) %>% print
+}
+```
+
+```{r}
+coagmet = bind_rows(EC, NE, NWMA, SE, SLV, SW) %>% 
+    select(year, month, location, precip_avg, precip_min, precip_max, everything()) %>% 
+    arrange(year)
+
+write_csv(coagmet, directory("thesis/Data/Constructed Datasets/coagmet.csv"))
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
