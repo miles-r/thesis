@@ -1,0 +1,86 @@
+---
+title: "Preliminary Analysis"
+author: "Miles Rollison"
+date: "2/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F)
+
+library(reticulate)
+Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+
+library(tidyverse)
+library(magrittr)
+```
+
+Test out different SPEI Timesteps
+
+```{r}
+hay %<>% mutate(price_inc = ifelse(price_diff > 0, 1, 0) %>% as_factor()) %>% filter(!is.na(price_inc))
+df3 = hay %>% right_join(spei %>% filter(TimeStep == 3) ) %>% filter( !is.na(bid_avg))
+df4 = hay %>% right_join(spei %>% filter(TimeStep == 4) ) %>% filter( !is.na(bid_avg))
+df5 = hay %>% right_join(spei %>% filter(TimeStep == 5) ) %>% filter( !is.na(bid_avg))
+df6 = hay %>% right_join(spei %>% filter(TimeStep == 6) ) %>% filter( !is.na(bid_avg))
+```
+
+Stepwise probit to compare predictive accuracy
+
+```{r}
+indexes = sample(1:nrow(df3), nrow(df3)/3) # All df have same rows
+dfs = c("df3", "df4", "df5", "df6")
+for (i in dfs) {
+    df = eval(as.name(i))
+    df %<>% select(-bid_high, -bid_low, -bid_avg, -spread,
+                   -price_diff, -price_lag, -diff_pct)
+                   
+    #assign(paste0("testing", i), df[indexes,], .GlobalEnv)
+    training = df[-indexes,]
+
+    stp = step(glm(price_inc ~ D0_lag1 + D1_lag1 + D2_lag1 + D3_lag1 + D4_lag1 + D2plus_lag1
+               + D0_lag2 + D1_lag2 + D2_lag2 + D3_lag2 + D4_lag2 + D2plus_lag2 
+               + D0_lag3 + D1_lag3 + D2_lag3 + D3_lag3 + D4_lag3 + D2plus_lag3 
+               + D0_lag4 + D1_lag4 + D2_lag4 + D3_lag4 + D4_lag4 + D2plus_lag4 
+               + D0 + D1 + D2 + D3 + D4 + D2plus 
+               + SPEI_avg + SPEI_min + SPEI_max 
+               + SPEI_avg_lag1 + SPEI_min_lag1 + SPEI_max_lag1,
+               family = binomial(link = "probit"), data = training,
+               na.action = na.omit), trace = 0)
+    assign(paste0(i, "_probit"), stp, .GlobalEnv)
+    
+    pr = predict(stp, testing, type = "response")
+    predictions = data.frame(predicted = round(pr) %>% as_factor(),
+                             observed = testing$price_inc %>% as_factor()) %>%
+        na.omit()
+    
+    cm = confusionMatrix(data = predictions$predicted,
+                         reference = predictions$observed)
+    
+    assign(paste0(i, "_cm"), cm, .GlobalEnv)
+    print(paste(i, "complete"))
+}
+```
+
+```{r}
+df3_cm
+df4_cm
+df5_cm
+df6_cm
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```

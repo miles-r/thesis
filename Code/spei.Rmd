@@ -19,6 +19,20 @@ directory = function(x){
 }
 ```
 
+```{r functions}
+lag_doubles = function(df, l = 1){
+    output = df
+    for(i in seq(1:l)){
+        lags = df %>% 
+            transmute_if(is.double, function(x){lag(x, i)}) %>%
+            #rename_at(vars(everything(), -id), function(x){ paste0(x, "_lag", i) }) %>%
+            mutate(id = id + i)
+        output %<>% left_join(lags, by = "id", suffix = c("", paste0("_lag", i))) %>% select(id, everything())   
+    }
+    return(output)
+}
+```
+
 ```{r}
 rowMin = function(x){
     m = c()
@@ -70,17 +84,18 @@ for (folder in regions) {
                           TimeStep = TimeStep %>% as.integer) %>% 
         select(year, month, location, everything()) %>% 
         arrange(TimeStep, year, month)
-        
-    lags = region_df  %>%
-        group_by(TimeStep) %>%
-        transmute_if(is.double, lag)
-    lags %<>% select(id, everything()) %>%
-        mutate(id = id + 1)
-    region_df %<>% full_join(lags, by = "id", suffix = c("", "_lag1")) 
+    
+    region_df %<>% select(id, year, month, location, TimeStep, SPEI_avg, SPEI_min, SPEI_max) 
+    
+    region_df %<>% group_by(TimeStep) %>%
+        lag_doubles(4) %>%
+        select(-contains("TimeStep_lag")) 
     
     assign(eval(folder), region_df, .GlobalEnv)
     #cor(region_df[start_index:index]) %>% print
 }
+
+rm(csv, da_folder, end_index, files, folder, previous, regions, start_index, stations, varname)
 ```
 
 ```{r}

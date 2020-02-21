@@ -20,6 +20,18 @@ directory = function(x){
 ```
 
 ```{r}
+lag_doubles = function(df, l = 1){
+    output = df
+    for(i in seq(1:l)){
+        lags = df %>% 
+            transmute_if(is.double, function(x){lag(x, i)}) %>%
+            #rename_at(vars(everything(), -id), function(x){ paste0(x, "_lag", i) }) %>%
+            mutate(id = id + i)
+        output %<>% left_join(lags, by = "id", suffix = c("", paste0("_lag", i))) %>% select(id, everything())   
+    }
+    return(output)
+}
+
 rowMin = function(x){
     m = c()
     for (i in 1:nrow(x)) {
@@ -52,45 +64,49 @@ for (folder in regions) {
             filter(station != "variableTypes")
         varname = paste0("precip_", gsub(".csv", '', csv))
         colnames(df)[3] = varname
-        df %<>% select(-station)
+        df %<>% mutate(year = lubridate::year(date) %>% as.integer,
+                      month = lubridate::month(date) %>% as.integer) %>% 
+            select(-date, -station) %>% 
+            group_by(year, month) %>% 
+            summarise_if(is.double, function(x) sum(x, na.rm = T)) %>% 
+            ungroup() %>% 
+            arrange(year, month)
+        
         if(!previous) {
             assign("region_df" , df, .GlobalEnv)
             previous = 1
         }
-        else region_df %<>% full_join(df, by = "date") 
+        else region_df %<>% full_join(df, by = c("year", "month")) 
        
     }
     
-    #region_df %<>% select(Date, TimeStep, everything())
-    region_df %<>% mutate(year = lubridate::year(date) %>% as.integer,
-                          month = lubridate::month(date) %>% as.integer,
-                          location = eval(folder),
+    region_df %<>% mutate(location = eval(folder),
                           id = 1:nrow(region_df) %>% as.double) %>%
         group_by(id, year, month, location) %>%
         summarise_if(is.double, function(x){sum(x, na.rm = T) }) %>% 
         ungroup()
+    
     end_index = ncol(region_df)
     region_df$precip_avg = region_df[start_index:end_index] %>% rowMeans( na.rm = T)
     region_df$precip_min = region_df[start_index:end_index] %>% rowMin()
     region_df$precip_max = region_df[start_index:end_index] %>% rowMax()
     
-    region_df %<>% arrange(year, month)
+    region_df %<>% select(id, year, month, location,
+                          precip_avg, precip_min, precip_max) %>% 
+        arrange(year, month)
     
-    lags = region_df  %>%
-        transmute_if(is.double, lag)
-    lags %<>% select(id, everything()) %>%
-        mutate(id = id + 1)
-    region_df %<>% full_join(lags, by = c("id"), suffix = c("", "_lag1")) 
+    region_df %<>% lag_doubles(4)
     
     assign(eval(folder), region_df, .GlobalEnv)
     #cor(region_df[3:end_index]) %>% print
 }
+
+rm(cam_folder, csv, end_index, files, folder, previous, regions, start_index, stations, varname)
 ```
 
 ```{r}
-coagmet = bind_rows(EC, NE, NWMA, SE, SLV, SW) %>% 
-    select(year, month, location, precip_avg, precip_min, precip_max, everything()) %>% 
-    arrange(year)
+coagmet = bind_rows(EC, NE, NWMA, SE, SLV, SW) %>%  
+    arrange(year, month, location)
 
 write_csv(coagmet, directory("thesis/Data/Constructed Datasets/coagmet.csv"))
 ```
