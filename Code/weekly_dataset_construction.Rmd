@@ -1,0 +1,114 @@
+---
+title: "Weekly Dataset Construction"
+author: "Miles Rollison"
+date: "2/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(magrittr)
+
+directory = function(x){paste0(fakepath, x)}
+```
+
+```{r functions}
+make_lags = function(df, v, l= 1){
+    for(i in seq(1:l)){
+        df %<>% 
+            mutate_at(v, function(x){lag(x, i)}) %>%
+            rename_at(v, function(x){ paste0(x, "_lag", i) }) %>%
+            full_join(df)   
+    }
+    return(df)
+}
+
+rename_locations = function(x){
+    x %<>% mutate(location = case_when(
+        location == "EC" ~ "East Central Colorado",
+        location == "NE" ~ "Northeast Colorado",
+        location == "NWMA" ~ "Mountains and Northwest",
+        location == "SE" ~ "Southeast Colorado",
+        location == "SLV" ~ "San Luis Valley",
+        location == "SW" ~ "South Western Colorado",
+        TRUE ~ "ERROR"))
+    return(x)
+}
+```
+
+```{r }
+hay = read_csv(directory("thesis/Data/AMS/OriginalReports/Hay/Hay_report_weekly_CO_2000_2020.csv"), 
+               col_types = cols(.default = 'c', bid_high = 'd', bid_low = 'd')) %>% 
+  select(-`Delivery Period`, -`Pricing Point`, -Variety, -Transmode) %>% 
+  filter(Units != "Small square", Class != "MIXED GRASS")
+
+colnames(hay) %<>% tolower
+
+hay %<>% mutate(bid_avg = (bid_high + bid_low) / 2,
+               quality = paste0(class, '_', grade)) %>% 
+  separate(date, into = c("month", "day", "year"), sep = '/', convert = T) 
+
+hay %<>% mutate(date = paste(year, month, day, sep = '-') %>% as.Date,
+         week = (as.numeric(date) %>% subtract(
+           as.numeric(as.Date(paste0((year - 1), "-12-31")))) %>% 
+             divide_by_int(7)),
+         units = gsub("Bales", '', units)) 
+
+hay %<>% group_by(location, quality, units) %>% 
+  mutate(price_lag1 = lag(bid_avg),
+         price_diff = bid_avg - price_lag1,
+         week_diff = ifelse(week > lag(week), week - lag(week),
+                            week - lag(week) + 52),
+         avg_diff = price_diff / week_diff) %>% 
+  ungroup()
+```
+
+```{r message=F}
+dm = read_csv(directory("thesis/Data/Drought Monitor/totalArea_categorical_byCounty_CO_20000101_20191219.csv")) %>% 
+  select(-statistic, -type)
+
+dm %<>% mutate(week = (as.numeric(ValidEnd) %>% subtract(
+           as.numeric(as.Date(paste0((year - 1), "-12-31")))) %>% 
+             divide_by_int(7)),
+           County = gsub(" County", '', County)) %>% 
+  rename(date = ValidStart) %>%
+  select(-ValidEnd)
+
+county = read_csv(directory("thesis/Data/counties_in_regions_CO_FIPS.csv"))
+
+dm %<>% left_join(county)
+dm %<>% mutate_at(vars(year, month, day, week, FIPS, week), as.integer) %>% 
+        mutate(date = as.character(date))
+dm %<>% group_by(ams_hay_region, year, week) %>%
+  summarise_if(is.double, sum) %>% 
+  ungroup() %>% 
+  rename(location = ams_hay_region)
+
+dm = make_lags(dm, vars(D0, D1, D2, D3, D4), 8)
+```
+
+```{r }
+hay %<>% mutate(location = case_when(
+  location == "Mountain Area" ~ "Mountains and Northwest",
+  location == "Western Slope Area" ~ "Mountains and Northwest",
+  TRUE ~ location)) 
+
+df = full_join(hay, dm)
+df %<>% select(year, week, location, bid_avg, quality, avg_diff, everything())
+```
+
+```{r }
+coagmet = read_csv(directory("thesis/Data/Constructed Datasets/coagmet_weekly.csv"))
+
+coagmet = rename_locations(coagmet)
+```
+
+```{r}
+df %<>% left_join(coagmet)
+```
+
+```{r}
+write_csv(df, directory("thesis/Data/Constructed Datasets/hay_weekly_ams_dm_spei_coagmet.csv"))
+```

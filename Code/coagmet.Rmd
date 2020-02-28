@@ -54,6 +54,7 @@ cam_folder = directory("thesis/Data/CoAgMet/stations/")
 regions = list.files(cam_folder)
 start_index = 5
 
+
 for (folder in regions) {
     files = list.files(paste0(cam_folder, folder))
     stations = gsub(".csv", '', files)
@@ -64,41 +65,79 @@ for (folder in regions) {
             filter(station != "variableTypes")
         varname = paste0("precip_", gsub(".csv", '', csv))
         colnames(df)[3] = varname
+        
         df %<>% mutate(year = lubridate::year(date) %>% as.integer,
-                      month = lubridate::month(date) %>% as.integer) %>% 
-            select(-date, -station) %>% 
+                      month = lubridate::month(date) %>% as.integer,
+                      week = as.numeric(as.Date(date)+6 -
+              as.Date(paste0((year - 1), "-12-31") )) %/% 7,
+              week = ifelse(week == 53, 52, week) %>% as.integer) %>% 
+            select( -station)
+        
+        df_monthly = df %>% 
+            select(-week) %>% 
             group_by(year, month) %>% 
             summarise_if(is.double, function(x) sum(x, na.rm = T)) %>% 
             ungroup() %>% 
             arrange(year, month)
+        df_weekly = df %>%
+            select(-month) %>% 
+            group_by(year, week) %>% 
+            summarise_if(is.double, function(x) sum(x, na.rm = T)) %>% 
+            ungroup() %>%
+            arrange(year, week)
+        
         
         if(!previous) {
-            assign("region_df" , df, .GlobalEnv)
+            assign("region_df_monthly" , df_monthly, .GlobalEnv)
+            assign("region_df_weekly" , df_weekly, .GlobalEnv)
             previous = 1
         }
-        else region_df %<>% full_join(df, by = c("year", "month")) 
+        else{
+            region_df_monthly %<>%
+                full_join(df_monthly, by = c("year", "month")) 
+            region_df_weekly %<>%
+                full_join(df_weekly, by = c("year", "week"))
+        }
        
     }
     
-    region_df %<>% mutate(location = eval(folder),
-                          id = 1:nrow(region_df) %>% as.double) %>%
+    region_df_monthly %<>% mutate(location = eval(folder),
+                          id = 1:nrow(region_df_monthly) %>% as.double) %>%
         group_by(id, year, month, location) %>%
         summarise_if(is.double, function(x){sum(x, na.rm = T) }) %>% 
         ungroup()
     
-    end_index = ncol(region_df)
-    region_df$precip_avg = region_df[start_index:end_index] %>% rowMeans( na.rm = T)
-    region_df$precip_min = region_df[start_index:end_index] %>% rowMin()
-    region_df$precip_max = region_df[start_index:end_index] %>% rowMax()
+    end_index = ncol(region_df_monthly)
+    region_df_monthly$precip_avg = region_df_monthly[start_index:end_index] %>% rowMeans( na.rm = T)
+    region_df_monthly$precip_min = region_df_monthly[start_index:end_index] %>% rowMin()
+    region_df_monthly$precip_max = region_df_monthly[start_index:end_index] %>% rowMax()
     
-    region_df %<>% select(id, year, month, location,
+    region_df_monthly %<>% select(id, year, month, location,
                           precip_avg, precip_min, precip_max) %>% 
         arrange(year, month)
     
-    region_df %<>% lag_doubles(4)
+    region_df_monthly %<>% lag_doubles(4)
     
-    assign(eval(folder), region_df, .GlobalEnv)
-    #cor(region_df[3:end_index]) %>% print
+    assign(eval(folder), region_df_monthly, .GlobalEnv)
+    
+     region_df_weekly %<>% mutate(location = eval(folder),
+                          id = 1:nrow(region_df_weekly) %>% as.double) %>%
+        group_by(id, year, week, location) %>% 
+        summarise_if(is.double, function(x){sum(x, na.rm = T) }) %>% 
+        ungroup()
+
+    end_index = ncol(region_df_weekly)
+    region_df_weekly$precip_avg = region_df_weekly[start_index:end_index] %>% rowMeans( na.rm = T)
+    region_df_weekly$precip_min = region_df_weekly[start_index:end_index] %>% rowMin()
+    region_df_weekly$precip_max = region_df_weekly[start_index:end_index] %>% rowMax()
+    
+    region_df_weekly %<>% select(id, year, week, location,
+                          precip_avg, precip_min, precip_max) %>% 
+        arrange(year, week)
+    
+    region_df_weekly %<>% lag_doubles(8)
+    
+    assign(paste0(eval(folder), '_weekly'), region_df_weekly, .GlobalEnv)
 }
 
 rm(cam_folder, csv, end_index, files, folder, previous, regions, start_index, stations, varname)
@@ -108,11 +147,16 @@ rm(cam_folder, csv, end_index, files, folder, previous, regions, start_index, st
 coagmet = bind_rows(EC, NE, NWMA, SE, SLV, SW) %>%  
     arrange(year, month, location)
 
-write_csv(coagmet, directory("thesis/Data/Constructed Datasets/coagmet.csv"))
+write_csv(coagmet, directory("thesis/Data/Constructed Datasets/coagmet_monthly.csv"))
+
+coagmet_weekly = bind_rows(EC_weekly, NE_weekly, NWMA_weekly, SE_weekly,  SLV_weekly, SW_weekly) %>%  
+    arrange(year, week, location)
+
+write_csv(coagmet_weekly, directory("thesis/Data/Constructed Datasets/coagmet_weekly.csv"))
 ```
 
 ```{r}
-
+rm(df, df_monthly, df_weekly, region_df_monthly, region_df_weekly, EC, NE, NWMA, SE, SLV, SW, EC_weekly, NE_weekly, NWMA_weekly, SE_weekly,  SLV_weekly, SW_weekly, coagmet, coagmet_weekly)
 ```
 
 ```{r}

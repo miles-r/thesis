@@ -8,45 +8,114 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message=F)
 
-library(reticulate)
-Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+#library(reticulate)
+#Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
 
 library(tidyverse)
 library(magrittr)
+library(caret)
+library(ranger)
+directory = function(x){paste0(fakepath, x)}
+```
+
+```{r}
+hay = read_csv(directory("thesis/Data/Constructed Datasets/hay_co_monthly_dm.csv"))
+spei = read_csv(directory("thesis/Data/Constructed Datasets/spei.csv"))
+
+
+rename_locations = function(x){
+    x %<>% mutate(location = case_when(
+        location == "EC" ~ "East Central Colorado",
+        location == "NE" ~ "Northeast Colorado",
+        location == "NWMA" ~ "Mountains and Northwest",
+        location == "SE" ~ "Southeast Colorado",
+        location == "SLV" ~ "San Luis Valley",
+        location == "SW" ~ "South Western Colorado",
+        TRUE ~ "ERROR"))
+    return(x)
+}
+
+spei = rename_locations(spei)
 ```
 
 Test out different SPEI Timesteps
 
 ```{r}
 hay %<>% mutate(price_inc = ifelse(price_diff > 0, 1, 0) %>% as_factor()) %>% filter(!is.na(price_inc))
-df3 = hay %>% right_join(spei %>% filter(TimeStep == 3) ) %>% filter( !is.na(bid_avg))
-df4 = hay %>% right_join(spei %>% filter(TimeStep == 4) ) %>% filter( !is.na(bid_avg))
-df5 = hay %>% right_join(spei %>% filter(TimeStep == 5) ) %>% filter( !is.na(bid_avg))
-df6 = hay %>% right_join(spei %>% filter(TimeStep == 6) ) %>% filter( !is.na(bid_avg))
+df3 = hay %>% right_join(spei %>% filter(TimeStep == 3) ) %>% 
+    filter( !is.na(bid_avg), month > 3 & month < 10, class !=  "MIXED GRASS", units == "large square" )
+df4 = hay %>% right_join(spei %>% filter(TimeStep == 4) ) %>% 
+    filter( !is.na(bid_avg), month > 3 & month < 10, class !=  "MIXED GRASS", units == "large square" )
+df5 = hay %>% right_join(spei %>% filter(TimeStep == 5) ) %>% 
+    filter( !is.na(bid_avg), month > 3 & month < 10, class !=  "MIXED GRASS", units == "large square" )
+df6 = hay %>% right_join(spei %>% filter(TimeStep == 6) ) %>% 
+    filter( !is.na(bid_avg), month > 3 & month < 10, class !=  "MIXED GRASS", units == "large square" )
+
+
+```
+
+```{r }
+full_specification  = formula(price_inc ~D0_lag1 + D1_lag1 + D2_lag1 + D3_lag1 + D4_lag1 + D2plus_lag1
+           + D0_lag2 + D1_lag2 + D2_lag2 + D3_lag2 + D4_lag2 + D2plus_lag2 
+           + D0_lag3 + D1_lag3 + D2_lag3 + D3_lag3 + D4_lag3 + D2plus_lag3 
+           + D0_lag4 + D1_lag4 + D2_lag4 + D3_lag4 + D4_lag4 + D2plus_lag4 
+           + D0 + D1 + D2 + D3 + D4 + D2plus 
+           + SPEI_avg + SPEI_min + SPEI_max 
+           + SPEI_avg_lag1 + SPEI_min_lag1 + SPEI_max_lag1)
+
+short_specification = formula(price_inc ~ D0_lag1 + D1_lag1 + D2_lag1 
+                        + D3_lag1 + D4_lag1 + D2plus_lag1 
+                        + SPEI_avg + SPEI_min + SPEI_max 
+                        + SPEI_avg_lag1 + SPEI_min_lag1 + SPEI_max_lag1)
+
+cumul_specification  = formula(price_inc ~ D2plus_lag1
+           + D2plus_lag2 
+           + D2plus_lag3 
+           + D2plus_lag4 
+           + D2plus 
+           + SPEI_avg + SPEI_min + SPEI_max 
+           + SPEI_avg_lag1 + SPEI_min_lag1 + SPEI_max_lag1)
+
+onelag_specification  = formula(price_inc ~  D2plus_lag
+           + SPEI_avg + SPEI_min
+1
+           + SPEI_avg_lag1 + SPEI_min_lag1 + SPEI_max_lag1)
+
+specification  = formula(price_inc ~ D2_lag1 + D3_lag1 
+           + D2_lag2 + D3_lag2
+           + D2_lag3 + D3_lag3
+           + D2_lag4 + D3_lag4  
+           + None
+           + SPEI_avg + SPEI_min
+           + SPEI_avg_lag1 + SPEI_min_lag1)
+
 ```
 
 Stepwise probit to compare predictive accuracy
 
-```{r}
-indexes = sample(1:nrow(df3), nrow(df3)/3) # All df have same rows
+```{r warning=F}
+indexes = createDataPartition(df3$price_inc, list = F)
 dfs = c("df3", "df4", "df5", "df6")
 for (i in dfs) {
-    df = eval(as.name(i))
+    df = eval(as.name(i)) 
     df %<>% select(-bid_high, -bid_low, -bid_avg, -spread,
-                   -price_diff, -price_lag, -diff_pct)
+                   -price_diff, -price_lag, -diff_pct) %>%
+        na.omit
                    
-    #assign(paste0("testing", i), df[indexes,], .GlobalEnv)
-    training = df[-indexes,]
-
-    stp = step(glm(price_inc ~ D0_lag1 + D1_lag1 + D2_lag1 + D3_lag1 + D4_lag1 + D2plus_lag1
-               + D0_lag2 + D1_lag2 + D2_lag2 + D3_lag2 + D4_lag2 + D2plus_lag2 
-               + D0_lag3 + D1_lag3 + D2_lag3 + D3_lag3 + D4_lag3 + D2plus_lag3 
-               + D0_lag4 + D1_lag4 + D2_lag4 + D3_lag4 + D4_lag4 + D2plus_lag4 
-               + D0 + D1 + D2 + D3 + D4 + D2plus 
-               + SPEI_avg + SPEI_min + SPEI_max 
-               + SPEI_avg_lag1 + SPEI_min_lag1 + SPEI_max_lag1,
+    training = df[indexes,]
+    testing = df[-indexes, ]
+start_time = Sys.time()
+    stp = step(glm(specification,
                family = binomial(link = "probit"), data = training,
                na.action = na.omit), trace = 0)
+
+
+    # train(short_specification,short
+    #       data = training, 
+    #       method = 'glm',
+    #       family = binomial,
+    #       metric = 'Accuracy')
+    
     assign(paste0(i, "_probit"), stp, .GlobalEnv)
     
     pr = predict(stp, testing, type = "response")
@@ -56,31 +125,116 @@ for (i in dfs) {
     
     cm = confusionMatrix(data = predictions$predicted,
                          reference = predictions$observed)
-    
-    assign(paste0(i, "_cm"), cm, .GlobalEnv)
     print(paste(i, "complete"))
+    cm$table %>% kappa %>% print
+    assign(paste0(i, "_cm"), cm, .GlobalEnv)
+    
+    print(Sys.time() - start_time)
+}   
+
+```
+
+```{r}
+df6_probit %>% summary
+
+
+full_specification_r  = formula(price_inc ~D0_lag1 + D1_lag1 + D2_lag1 + D3_lag1 + D4_lag1 + D2plus_lag1
+           + D0_lag2 + D1_lag2 + D2_lag2 + D3_lag2 + D4_lag2 + D2plus_lag2 
+           + D0_lag3 + D1_lag3 + D2_lag3 + D3_lag3 + D4_lag3 + D2plus_lag3 
+           + D0_lag4 + D1_lag4 + D2_lag4 + D3_lag4 + D4_lag4 + D2plus_lag4 
+           + D0 + D1 + D2 + D3 + D4 + D2plus 
+           + SPEI_avg + SPEI_min + SPEI_max 
+           + SPEI_avg_lag1 + SPEI_min_lag1 + SPEI_max_lag1
+           + location + quality)
+```
+
+```{r warning=F}
+indexes = createDataPartition(df3$price_inc, list = F)
+dfs = c("df3", "df4", "df5", "df6")
+for (i in dfs) {
+    df = eval(as.name(i)) 
+    df %<>% select(-bid_high, -bid_low, -bid_avg, -spread,
+                   -price_inc, -price_lag, -diff_pct) %>%
+        na.omit
+    df %<>% rename(price_inc = price_diff_adj)               
+    training = df[indexes,]
+    testing = df[-indexes, ]
+start_time = Sys.time()
+    stp = step(lm(full_specification_r, data = training), trace = 0)
+    
+    assign(paste0(i, "_ols"), stp, .GlobalEnv)
+    
+    pr = predict(stp, testing)
+    predictions = data.frame(predicted = pr,
+                             observed = testing$price_inc) %>%
+        na.omit()
+    
+    
+    plot(predictions$predicted, predictions$observed);abline(0, 1, col = 'red')
+    
+    predictions %<>% mutate(error = predicted - observed)
+    abs(predictions$error) %>% mean %>% print
+    predictions$error^2 %>% mean %>% sqrt %>%  print
+    print(paste(i, "complete"))
+    
+    print(Sys.time() - start_time)
+}  
+```
+
+```{r}
+df3_ols %>% summary
+
+
+```
+
+```{r warning=F}
+
+specification_qr  = formula(price_inc ~ D2_lag1 + D3_lag1 
+           + D2_lag2 + D3_lag2
+           + D2_lag3 + D3_lag3
+           + D2_lag4 + D3_lag4  
+           + None
+           + SPEI_avg + SPEI_min
+           + SPEI_avg_lag1 + SPEI_min_lag1 
+           + location )
+full_specification_qr  = formula(price_inc ~D0_lag1 + D1_lag1 + D2_lag1 + D3_lag1 + D4_lag1 
+           + D0_lag2 + D1_lag2 + D2_lag2 + D3_lag2 + D4_lag2
+           + D0_lag3 + D1_lag3 + D2_lag3 + D3_lag3 + D4_lag3 
+           + D0_lag4 + D1_lag4 + D2_lag4 + D3_lag4 + D4_lag4 
+           + D0 + D1 + D2 + D3 + D4 
+           + SPEI_avg + SPEI_min + SPEI_max 
+           + SPEI_avg_lag1 + SPEI_min_lag1 + SPEI_max_lag1
+           + location + quality 
+           + 0)
+
+indexes = createDataPartition(df3$price_inc, list = F)
+dfs = c("df3", "df4", "df5", "df6")
+for (i in dfs) {
+    df = eval(as.name(i)) 
+    df %<>% select(-bid_high, -bid_low, -bid_avg,
+                   -price_inc, -price_lag, -diff_pct) %>%
+        na.omit %>% unique()
+    df %<>% rename(price_inc = price_diff)           
+    training = df[indexes,] %>% unique
+    testing = df[-indexes, ]
+start_time = Sys.time()
+    stp = quantreg::rq(full_specification_qr, data = training)
+    
+    assign(paste0(i, "_qr"), stp, .GlobalEnv)
+    
+    pr = predict(stp, testing)
+    predictions = data.frame(predicted = pr,
+                             observed = testing$price_inc) %>%
+        na.omit()
+    
+    plot(predictions$predicted, predictions$observed);abline(0, 1, col = 'red')
+    
+    predictions %<>% mutate(error = predicted - observed)
+    abs(predictions$error) %>% mean %>% print
+    predictions$error^2 %>% mean %>% sqrt %>%  print
+    
+    print(paste(i, "complete"))
+    
+    print(Sys.time() - start_time)
 }
-```
-
-```{r}
-df3_cm
-df4_cm
-df5_cm
-df6_cm
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
 ```

@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE, message=F)
 
 library(tidyverse)
 library(magrittr)
+library(lubridate)
 ```
 
 ```{r functions}
@@ -32,8 +33,9 @@ hay = read_csv(paste0(fakepath, "thesis/Data/AMS/OriginalReports/hay_reports_sta
 
 hay %<>% separate(location, into = c("location", "state"), sep = ', ') %>% 
     filter(state == "CO") %>% 
-    mutate(year = lubridate::year(month),
-           month = lubridate::month(month),
+    mutate(date = date(month),
+           year = year(month),
+           month = month(month),
            bid_avg = (bid_low + bid_high) / 2,
            spread = bid_high - bid_low,
            units = units %>% tolower %>% gsub(" bales", '', .),
@@ -47,9 +49,11 @@ hay %<>% separate(location, into = c("location", "state"), sep = ', ') %>%
     arrange(location, year, month) %>% 
     filter(quality != "ALFALFA_NA")
 
-hay %<>% group_by(location, quality) %>%
+hay %<>% group_by(location, quality, units) %>%
     mutate(price_lag = lag(bid_avg),
+           date_diff = as.numeric(date - lag(date)) %/% 28,
            price_diff = bid_avg - price_lag,
+           price_diff_adj = ifelse(date_diff == 0, price_diff, price_diff / date_diff), 
            diff_pct = round(price_diff / bid_avg, 4),
            price_inc = sign(diff_pct))
 ```
@@ -59,8 +63,8 @@ corn = read_csv(paste0(fakepath, "thesis/Data/AMS/OriginalReports/corn_reports_s
 
 corn %<>% separate(location, into = c("location", "state"), sep = ', ') %>% 
     filter(state == "CO") %>% 
-    mutate(year = lubridate::year(month),
-           month = lubridate::month(month),
+    mutate(year = year(month),
+           month = month(month),
            bid_avg = (bid_low + bid_high) / 2,
            price_cwt = case_when(
                units == "Bushel" ~ (bid_avg / 54) * 100,
