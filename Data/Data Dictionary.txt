@@ -1,0 +1,14 @@
+# Data Dictionary
+
+Constructed Price Variables
+
+price_lag:       bid_avg for previous observation of the same location, quality, and unit
+price_diff:      difference between bid_avg and price_lag
+date_diff:       months since last observation of the same location, quality, and unit
+price_diff_adj:  price_diff standardized by dividing by date_diff
+diff_pct:        price_diff in percentage terms
+diff_pct_adj:    price_diff_adj in percentage terms
+price_inc:       price increase or decrease 1 : increase; -1 : decrease; 0 : no change
+price_dev:       diff_pct_adj measured in standard deviations
+dev_cat:         price_dev as categorical variable with categories
+

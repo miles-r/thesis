@@ -5,6 +5,18 @@ date: "2/19/2020"
 output: html_document
 ---
 
+# Data Dictionary
+
+price_lag:       bid_avg for previous observation of the same location, quality, and unit
+price_diff:      difference between bid_avg and price_lag
+date_diff:       months since last observation of the same location, quality, and unit
+price_diff_adj:  price_diff standardized by dividing by date_diff
+diff_pct:        price_diff in percentage terms
+diff_pct_adj:    price_diff_adj in percentage terms
+price_inc:       price increase or decrease 1 : increase; -1 : decrease; 0 : no change
+price_dev:       diff_pct_adj measured in standard deviations
+dev_cat:         price_dev as categorical variable with categories
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message=F)
 
@@ -14,6 +26,8 @@ knitr::opts_chunk$set(echo = TRUE, message=F)
 library(tidyverse)
 library(magrittr)
 library(lubridate)
+
+directory = function(x){paste0(fakepath, x)}
 ```
 
 ```{r functions}
@@ -28,8 +42,9 @@ make_lags = function(df, v, l= 1){
 }
 ```
 
-```{r hay}
-hay = read_csv(paste0(fakepath, "thesis/Data/AMS/OriginalReports/hay_reports_stacked.csv"))
+```{r hay, message=F}
+st = Sys.time()
+hay = read_csv(directory( "thesis/Data/AMS/OriginalReports/hay_reports_stacked.csv"))
 
 hay %<>% separate(location, into = c("location", "state"), sep = ', ') %>% 
     filter(state == "CO") %>% 
@@ -38,7 +53,7 @@ hay %<>% separate(location, into = c("location", "state"), sep = ', ') %>%
            month = month(month),
            bid_avg = (bid_low + bid_high) / 2,
            spread = bid_high - bid_low,
-           units = units %>% tolower %>% gsub(" bales", '', .),
+           units = units%>% gsub(" Bales", '', .),
            quality = paste(class, `grade description`, sep = '_'),
            location = case_when(
                location == "Mountain Area" ~ "Mountains and Northwest",
@@ -54,12 +69,24 @@ hay %<>% group_by(location, quality, units) %>%
            date_diff = as.numeric(date - lag(date)) %/% 28,
            price_diff = bid_avg - price_lag,
            price_diff_adj = ifelse(date_diff == 0, price_diff, price_diff / date_diff), 
-           diff_pct = round(price_diff / bid_avg, 4),
-           price_inc = sign(diff_pct))
+           diff_pct = round(price_diff / bid_avg, 4) * 100,
+           diff_pct_adj = round(price_diff_adj / bid_avg, 4) * 100,
+           price_inc = sign(price_diff))
+
+hay %<>% 
+    mutate(price_dev = round(diff_pct_adj / (sd(diff_pct_adj, na.rm = T) + 0.0001)),
+           dev_cat = case_when(price_dev > 3 ~ 4,
+                               price_dev < -3 ~ -4,
+                               TRUE ~ price_dev))
+
+hay$price_inc = with(hay, factor(price_inc)) %>% as.ordered() 
+hay$dev_cat = with(hay, factor(dev_cat)) %>% as.ordered() 
+
+hay %<>% ungroup()
 ```
 
-```{r corn}
-corn = read_csv(paste0(fakepath, "thesis/Data/AMS/OriginalReports/corn_reports_stacked.csv"))
+```{r corn, message=F}
+corn = read_csv(directory( "thesis/Data/AMS/OriginalReports/corn_reports_stacked.csv"))
 
 corn %<>% separate(location, into = c("location", "state"), sep = ', ') %>% 
     filter(state == "CO") %>% 
@@ -81,10 +108,10 @@ corn %<>% group_by(location) %>%
 
 ```
 
-```{r drought}
-dm = read_csv(paste0(fakepath, "thesis/Data/Drought Monitor/totalArea_categorical_byCounty_CO_20000101_20191219.csv"))   
+```{r drought, message=F}
+dm = read_csv(directory( "thesis/Data/Drought Monitor/totalArea_categorical_byCounty_CO_20000101_20191219.csv"))   
 
-counties = read_csv(paste0(fakepath, "thesis/Data/counties_in_regions_CO_FIPS.csv"))
+counties = read_csv(directory( "thesis/Data/counties_in_regions_CO_FIPS.csv"))
 
 #Aggregate to month level
 dm %<>% group_by(year, month, County) %>%
@@ -117,11 +144,70 @@ hay %<>% full_join(dmh, by = c("location" = "ams_hay_region", "year", "month"))
 corn %<>% full_join(dmc, by = c("location" = "ams_corn_region", "year", "month")) %>% arrange(year, month, location)
 
 rm(dm, dmc, dmh, counties)
+#gc()
 ```
 
 ```{r write}
-write_csv(hay, paste0(fakepath, "thesis/Data/Constructed Datasets/hay_co_monthly_dm.csv"))
-write_csv(corn, paste0(fakepath, "thesis/Data/Constructed Datasets/corn_co_monthly_dm.csv"))
+write_csv(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm.csv"))
+saveRDS(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm.Rds"))
+write_csv(corn, directory( "thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm.csv"))
+```
 
-rm(hay, corn)
+```{r}
+spei = read_csv(directory("thesis/Data/Constructed Datasets/spei.csv"))
+
+
+rename_locations = function(x){
+    x %<>% mutate(location = case_when(
+        location == "EC" ~ "East Central Colorado",
+        location == "NE" ~ "Northeast Colorado",
+        location == "NWMA" ~ "Mountains and Northwest",
+        location == "SE" ~ "Southeast Colorado",
+        location == "SLV" ~ "San Luis Valley",
+        location == "SW" ~ "South Western Colorado",
+        TRUE ~ "ERROR"))
+    return(x)
+}
+
+spei = rename_locations(spei)
+```
+
+```{r}
+timesteps = c(3, 4, 6, 12, 24)
+
+for (i in timesteps) {
+    df = spei %>% filter(TimeStep == i) %>% select(-id, -TimeStep)
+    colnames(df) %<>% gsub("SPEI", paste0("SPEI", i), .)
+    assign(paste0("spei", i), df, .GlobalEnv)
+}
+
+
+for (i in timesteps[2:5]) {
+    name = paste0("spei", i)
+    df = eval(as.name(name))
+    spei3 %<>% full_join(df)
+} 
+
+rm(spei4, spei6, spei12, spei24, df)
+#gc()
+```
+
+```{r}
+hay %<>% full_join(spei3) %>% filter(!is.na(bid_avg))
+corn %<>% full_join(spei3) %>% filter(!is.na(bid_avg))
+```
+
+```{r}
+write_csv(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.csv"))
+saveRDS(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.Rds"))
+write_csv(corn, directory( "thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm_spei.csv"))
+```
+
+```{r}
+rm(corn, hay, spei, spei3)
+gc()
+
+et = Sys.time()
+
+et-st
 ```
