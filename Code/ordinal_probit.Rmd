@@ -1,0 +1,202 @@
+---
+title: "Ordinal Probit"
+author: "Miles Rollison"
+date: "2/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F)
+
+#library(reticulate)
+#Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+
+library(tidyverse)
+library(magrittr)
+
+library(ordinal)
+library(caret)
+
+directory = function(x){paste0(fakepath, x)}
+```
+
+```{r}
+hay = read_rds(directory("thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.Rds")) %>% 
+    filter( month > 4 & month < 10) 
+corn = read_csv(directory("thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm_spei.csv")) %>% 
+    filter(price_inc != 0, month > 4 & month < 10) %>%  #filter out 12 obs with no price change 
+    mutate(price_inc = case_when(price_inc > 0 ~ 1,
+                                 TRUE ~ 0) %>% as.factor())
+
+df1 = hay %>% filter(time_period == 1)
+df2 = hay %>% filter(time_period == 2)
+df3 = hay %>% filter(time_period == 3)
+df4 = hay %>% filter(time_period == 4)
+
+```
+
+```{r}
+index = caret::createDataPartition(hay$price_inc, p = 0.5, list = F)
+
+training = hay[index, ]
+testing = hay[-index, ]
+```
+
+```{r}
+m1 = clm(price_inc ~ D2_lag2 + SPEI4_min_lag2, # D0_lag2 + D1_lag2 + D2_lag2 + D3_lag2 + D4_lag2 
+         data =testing, 
+         link = "probit",
+         Hess = T,
+         na.action = na.omit) 
+
+m1 %>% summary
+pr1 = predict(m1, testing, type = "class")
+pr1$fit %>%  caret::confusionMatrix(testing$price_inc)
+```
+
+```{r}
+run_lag1 = function(){
+m2 = clm(price_inc ~ D1_lag1 + D3_lag1 + D2_lag1 +  SPEI4_min_lag1, #
+         data =testing, 
+         link = "probit",
+         Hess = T,
+         na.action = na.omit) 
+
+m2 %>% summary %>% print
+pr2 = predict(m2, testing, type = "class")
+pr2$fit %>%  caret::confusionMatrix(testing$price_inc) %>% print
+}
+```
+```{r}
+
+m3 = clm(price_inc ~ D3_lag1 + D3_lag2 + D3_lag3 +   SPEI4_min_lag1, #
+         data =testing, 
+         link = "probit",
+         Hess = T,
+         na.action = na.omit) 
+
+m3 %>% summary
+pr3 = predict(m3, testing, type = "class")
+pr3$fit %>%  caret::confusionMatrix(testing$price_inc)
+
+```
+
+
+```{r}
+run_ks = function(){
+mks = clm(price_inc ~   None 
+#+ D0_lag1 
+#+ D1_lag1 
++ D2_lag1 + D3_lag1 + D4_lag1         
+#+ D0_lag2 
+#+ D1_lag2 
++ D2_lag2 + D3_lag2 + D4_lag2 
+#+ D0_lag3 
+#+ D1_lag3 
++ D2_lag3 + D3_lag3 + D4_lag3 
+#+ D0_lag4 
+#+ D1_lag4 
++ D2_lag4 + D3_lag4 + D4_lag4 
+#+ D0 + D1 
++ D2  +  D3 + D4 
+#+  SPEI4_min
++ SPEI4_min_lag1 + SPEI4_min_lag2 + SPEI4_min_lag3 + SPEI4_min_lag4, #
+         data = testing, 
+         link = "probit",
+         Hess = T,
+         na.action = na.omit) 
+
+mks %>% summary %>% print
+prks = predict(mks, testing, type = "class")
+prks$fit %>%  caret::confusionMatrix(testing$price_inc) %>% print
+}
+```
+
+```{r}
+index = caret::createDataPartition(df1$price_inc, p = 0.8, list = F)
+
+training = df1[index, ]
+testing = df1[-index, ]
+
+#run_lag1()
+run_ks()
+```
+
+```{r}
+idx = list(index)
+save_idx = list()
+n = length(save_idx)
+save_idx[[n + 1]] = idx
+save_idx[[n + 1]]$k = 0.61
+save_idx
+n
+```
+
+```{r}
+dfc = corn %>% filter(time_period < 4)
+
+index = caret::createDataPartition(dfc$price_inc, p = 0.7, list = F)
+
+training = dfc# dfc[index, ]
+testing = corn %>% filter(time_period == 4)  #dfc[-index, ]
+
+spec = formula(price_inc ~   
+                   + SPEI4_min_lag1 + SPEI4_min_lag2 #+ SPEI4_min_lag3 + SPEI4_min_lag4 #
+                  #+ None 
++  SPEI4_min+ D2 + D3 #+ D4 
+#+ D0_lag1 + D1_lag1 
++ D2_lag1 + D3_lag1 #+ D4_lag1         
+#+ D0_lag2 + D1_lag2 
++ D2_lag2 + D3_lag2 #+ as.factor(time_period) #+ D4_lag2 
+#+ D0_lag3 + D1_lag3 
+#+ D2_lag3 + D3_lag3 + D4_lag3 
+#+ D0_lag4 + D1_lag4 
+#+ D2_lag4 + D3_lag4 + D4_lag4 
+#+ D0 + D1 
+)
+mfx::probitmfx(spec, testing, robust = T)
+#spec = formula(price_inc ~ D1_lag1 + D2_lag1 + D3_lag1 + D4_lag1 )     
+mksc = glm(spec,
+         data = testing, 
+         family = binomial(link = "probit"),
+         na.action = na.omit) 
+mksc %>% summary %>% print
+prksc = predict(mksc, testing, type = "response") %>% round() %>% as.factor()
+cm = prksc %>%  caret::confusionMatrix(testing$price_inc) 
+cm %>% print
+
+prop.table(table(training$price_inc))
+prop.table(table(testing$price_inc))
+
+```
+```{r}
+cm$table 
+cm$table[2]
+sum(cm$table)
+expected_accuracy = function(cm){
+    denom = sum(cm)
+    p0 = ((cm[1] + cm[3]) / denom) * ((cm[1] + cm[2]) / denom)
+    p1 = ((cm[2] + cm[4]) / denom) * ((cm[3] + cm[4]) / denom)
+    return(p0 + p1)
+}
+
+expected_accuracy(cm$table)
+
+0.48 *.35
+```
+
+
+```{r}
+m3 = clm(price_inc ~ D2_lag1 + D2_lag2 + D2_lag3 +   SPEI4_min_lag1, #
+         data = testing, 
+         link = "probit",
+         Hess = T,
+         na.action = na.omit) 
+
+m3 %>% summary
+pr3 = predict(m3, testing, type = "class")
+pr3$fit %>%  caret::confusionMatrix(testing$dev_cat)
+
+```
+
+

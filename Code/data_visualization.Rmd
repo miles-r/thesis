@@ -1,0 +1,88 @@
+---
+title: "Data Viz"
+author: "Miles Rollison"
+date: "2/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F)
+
+#library(reticulate)
+#Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+
+library(tidyverse)
+library(magrittr)
+
+directory = function(x){paste0(fakepath, x)}
+```
+
+```{r}
+hay = read_rds(directory("thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.Rds")) %>%  filter( !is.na(bid_avg), class !=  "MIXED GRASS", units != "Small square")
+
+corn = read_csv(directory("thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm_spei.csv")) %>%
+  filter(bid_avg < 20, units == "Bushel" )
+```
+
+# Price Regimes
+```{r priceBreakpoints, warning=F}
+avg = hay %>% group_by(date, class) %>% summarize_at(vars(bid_avg, drought_area_pct, dry_area), mean) 
+
+#avg = hay %>% group_by(date, class) %>% summarize_at(vars(bid_avg), mean) 
+avgc = corn %>% group_by(date) %>% summarize(bid_avg =  mean(bid_avg)*37) 
+avgc$class = "CORN"
+avg %<>% full_join(avgc)
+
+ggplot(data = avg, aes(x = date, y  = bid_avg)) + 
+    geom_col(aes(y = rollison::rescale(dry_area) * 50), col = 'gray50') + 
+    geom_col(aes(y = rollison::rescale(drought_area_pct) * 50), col = 'red', name = "D2 +") +
+        geom_line(aes(color = class)) +
+        geom_vline(aes(xintercept = as.Date("2005-04-30"))) +
+        geom_text(aes(x = as.Date("2004-12-28"), y = 200, label = "April 2005"), angle = 90, text = element_text(size = 11)) +
+        geom_text(aes(x = as.Date("2005-03-30"), y = 200, label = "\nMay 2005"), angle = 90, text = element_text(size = 11)) +
+        geom_vline(aes(xintercept = as.Date("2011-04-30"))) +
+        geom_text(aes(x = as.Date("2010-12-30"), y = 200, label = "April 2011"), angle = 90, text = element_text(size = 11)) +
+        geom_text(aes(x = as.Date("2011-05-01"), y = 200, label = "\nMay 2011"), angle = 90, text = element_text(size = 11)) +
+        geom_vline(aes(xintercept = as.Date("2014-10-01"))) +
+        geom_text(aes(x = as.Date("2014-05-30"), y = 200, label = "Sept 2014"), angle = 90, text = element_text(size = 11)) +
+        geom_text(aes(x = as.Date("2014-10-01"), y = 200, label = "\nOct 2014"), angle = 90, text = element_text(size = 11)) +
+        ggtitle("Average Price and Drought, Colorado 2000-2018") +
+        xlab("Date") +
+        ylab("Price, Averaged Across Regions") +
+        scale_color_manual(values = c('darkgreen', '#FFA400', 'darkolivegreen3'), name = '')
+
+#dev.copy(png, filename = "/home/user1/workspace/thesis/Outputs/Images/avg_price_plot.png")
+```
+
+```{r}
+plot_density = function(x, tau = "default", ...){
+#' Plots density of x and overlays tau cuts
+#'
+#'
+#' @param x  coordinates of the points where the density is estimated
+#'
+#' @param tau  verticle lines to overlay onto the density plot
+#'
+#' @param ... can be used to pass arguments to \code{density()}, for example kernel
+#' 
+#'
+#' Currently the only option for tau is "default", which overlays
+#' mean, median, and +- 3 standard deviations from the mean
+    x = na.omit(x)
+    #par(bg = 'gray50')
+    wd = max(x) *2.05
+    plot(density(x, ...), main = "Ordered Probit"); abline(h = 0, col = 'gray'); abline(v = 0, lwd = 1000, col= "#7F7F7F4D")
+       if(tau == "default"){
+            s = sd(x)
+            abline(v = mean(x), col = 'black')
+            abline(v = -1.5*s, col = 'red')
+            abline(v = 1*s, col = 'red')
+            text(x = -1, labels = c("y*"))
+       
+       }
+}
+```
+
+```{r}
+plot_density(rnorm(100000, 0.3), kernel = "g")
+```

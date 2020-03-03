@@ -1,0 +1,177 @@
+---
+title: "regression trees"
+author: "Miles Rollison"
+date: "2/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F)
+
+#library(reticulate)
+#Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+
+library(tidyverse)
+library(magrittr)
+
+library(rpart)
+library(rpart.plot)
+
+library(caret)
+directory = function(x){paste0(fakepath, x)}
+```
+
+```{r}
+hay = read_rds(directory("thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.Rds")) %>%
+  filter( !is.na(bid_avg), class !=  "MIXED GRASS", units != "Small square")
+
+corn = read_csv(directory("thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm_spei.csv")) %>%
+  filter(bid_avg < 20, units == "Bushel" )
+
+```
+
+```{r}
+t1 = rpart(bid_avg ~ date, data = hay, method = 'anova', control = rpart.control(maxdepth = 3))
+t2 = rpart(bid_avg ~ date, data = corn, method = 'anova', control = rpart.control(maxdepth = 4))
+```
+
+```{r}
+t1
+rpart.plot(t1)
+t2
+rpart.plot(t2)
+```
+Hay: 2000-2005| 2006-2010 | 2011-2014 | 2015-2020
+Corn: 2000-2006|2007-2010|2010-2013| 2015-2020
+```{r}
+#hay[which(hay$date < 16435), ] %>% tail
+corn[which(corn$date < 15933), ] %>% tail
+```
+
+```{r warning=F}
+#with(hay, plot(date, bid_avg, type = 'b')); abline(v = 13284); abline(v = 15110); abline(v = 16435)
+
+
+(1/54) * 2000 
+
+avg = hay %>% group_by(date, class) %>% summarize_at(vars(bid_avg), mean) 
+avgc = corn %>% group_by(date) %>% summarize(bid_avg =  mean(bid_avg)*37) 
+avgc$class = "CORN"
+avg %<>% full_join(avgc)
+
+ggplot(data = avg, aes(x = date, y  = bid_avg)) +
+        geom_line(aes(color = class)) +
+        
+        geom_vline(aes(xintercept = as.Date("2005-04-30"))) +
+        geom_text(aes(x = as.Date("2004-12-28"), y = 200, label = "April 2005"), angle = 90, text = element_text(size = 11)) +
+        geom_text(aes(x = as.Date("2005-03-30"), y = 200, label = "\nMay 2005"), angle = 90, text = element_text(size = 11)) +
+        geom_vline(aes(xintercept = as.Date("2011-04-30"))) +
+        geom_text(aes(x = as.Date("2010-12-30"), y = 200, label = "April 2011"), angle = 90, text = element_text(size = 11)) +
+        geom_text(aes(x = as.Date("2011-05-01"), y = 200, label = "\nMay 2011"), angle = 90, text = element_text(size = 11)) +
+        geom_vline(aes(xintercept = as.Date("2014-10-01"))) +
+        geom_text(aes(x = as.Date("2014-05-30"), y = 200, label = "Sept 2014"), angle = 90, text = element_text(size = 11)) +
+        geom_text(aes(x = as.Date("2014-10-01"), y = 200, label = "\nOct 2014"), angle = 90, text = element_text(size = 11)) +
+        ggtitle("Time Periods Selected by Minimum SSD from Mean") +
+        xlab("Date") +
+        ylab("Price, Averaged Across Regions") +
+        scale_color_manual(values = c('seagreen', '#FFA400', '#F5D76E'), name = '')
+
+```
+
+```{r}
+#hay %<>%  filter(date_diff == 1)
+# hay %<>% mutate(time_period = case_when(date <= as.Date("2005-04-30") ~ 1,
+#                                         date <= as.Date("2011-04-30") ~ 2,
+#                                         date <= as.Date("2014-10-01") ~ 3,
+#                                         date >  as.Date("2014-10-01") ~ 4))
+# 
+# write_rds(hay, directory("thesis/Data/Constructed Datasets/hay_co_season_timeperiods_ams_dm_spei.Rds"))
+```
+
+```{r}
+idx = createDataPartition(hay$price_inc, p = 0.7, list = F)
+training = hay[idx, ]
+testing = hay[-idx, ]
+```
+
+```{r}
+full_specification = formula(
+price_inc ~ time_period +  None 
++ D0_lag1 + D1_lag1 + D2_lag1 + D3_lag1 + D4_lag1         
++ D0_lag2 + D1_lag2 + D2_lag2 + D3_lag2 + D4_lag2 
++ D0_lag3 + D1_lag3 + D2_lag3 + D3_lag3 + D4_lag3 
++ D0_lag4 + D1_lag4 +  D2_lag4 + D3_lag4 + D4_lag4 
++ D0 + D1 + D2  +  D3 + D4 
++ D2plus )
++  SPEI4_min+ SPEI4_min_lag1 + SPEI4_min_lag2 + SPEI4_min_lag3 + SPEI4_min_lag4)
+
+
++ SPEI3_avg + SPEI3_min + SPEI3_max      
++  SPEI3_avg_lag1 + SPEI3_avg_lag2 + SPEI3_avg_lag3 + SPEI3_avg_lag4 + SPEI6_avg + SPEI6_min       
+ + SPEI12_avg      
++  SPEI12_min + SPEI12_max + SPEI12_avg_lag1 + SPEI12_avg_lag2 + SPEI12_avg_lag3 + SPEI12_avg_lag4 
++  SPEI24_avg + SPEI24_min + SPEI24_max + SPEI24_avg_lag1 + SPEI24_avg_lag2 + SPEI24_avg_lag3 
++  SPEI24_avg_lag4)
+
+optimals = cm2$byClass[[3]]
+optimalk = k$coef
+optimalf = full_specification
+```
+0.231 6min
+```{r}
+full_specification = formula(
+price_inc ~  None + time_period 
+ + D0_lag1 + D1_lag1 + D2_lag1 + D3_lag1 + D4_lag1         
+ + D0_lag2 + D1_lag2 + D2_lag2 + D3_lag2 + D4_lag2 
+  + D0_lag3 + D1_lag3 + D2_lag3 + D3_lag3 + D4_lag3 
+ + D0_lag4 + D1_lag4 +  D2_lag4 + D3_lag4 + D4_lag4 
+  + D0 + D1 + D2  +  D3 + D4 
++  SPEI4_min 
++ SPEI4_min_lag1 
++ SPEI4_min_lag2 
+ + SPEI4_min_lag3 
+ + SPEI4_min_lag4
+) 
+
+
+ctrl = rpart.control(xval = 10)
+
+m2 = rpart(full_specification, data = training, method = "class",  control = ctrl)
+
+#m2
+#rpart.plot(m2)
+p2 = predict(m2, testing, type = "class")
+cm2 = confusionMatrix(factor(p2), testing$price_inc)
+k = kappa(cm2$table)
+k = k$coef
+s = cm2$byClass[[3]]
+
+if(s > optimals) {
+    print("Better Sensitivity")
+    optimals = s
+    optimalfs = full_specification
+}
+
+if(k > optimalk){
+    print("Better Kappa")
+    optimalk = k
+    optimalfk = full_specification
+}
+
+#cm2
+```
+
+```{r}
+#train_pinc = training %>% select(-dev_cat)
+m3 = rpart(price_inc ~ . - price_diff - price_diff_adj - diff_pct - diff_pct_adj - price_dev -date -year, data = training, method = "class")
+m3
+rpart.plot(m3)
+
+pr3 = predict(m3, testing, type = "class")
+confusionMatrix(factor(pr3), testing$price_inc)
+```
+
+```{r}
+
+
+```

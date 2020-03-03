@@ -77,12 +77,13 @@ hay %<>%
     mutate(price_dev = round(diff_pct_adj / (sd(diff_pct_adj, na.rm = T) + 0.0001)),
            dev_cat = case_when(price_dev > 3 ~ 4,
                                price_dev < -3 ~ -4,
-                               TRUE ~ price_dev))
+                               TRUE ~ price_dev)) %>% 
+    ungroup()
 
 hay$price_inc = with(hay, factor(price_inc)) %>% as.ordered() 
 hay$dev_cat = with(hay, factor(dev_cat)) %>% as.ordered() 
 
-hay %<>% ungroup()
+
 ```
 
 ```{r corn, message=F}
@@ -90,21 +91,25 @@ corn = read_csv(directory( "thesis/Data/AMS/OriginalReports/corn_reports_stacked
 
 corn %<>% separate(location, into = c("location", "state"), sep = ', ') %>% 
     filter(state == "CO") %>% 
-    mutate(year = year(month),
+    mutate(date = date(month),
+           year = year(month),
            month = month(month),
            bid_avg = (bid_low + bid_high) / 2,
            price_cwt = case_when(
                units == "Bushel" ~ (bid_avg / 54) * 100,
                TRUE ~ bid_avg),
            spread = bid_high - bid_low) %>% 
-    select(year, month, everything(), -variety, -`grade description`, -`delivery period`, -class) %>% 
+    select(date, year, month, everything(), -variety, -`grade description`, -`delivery period`, -class) %>% 
     filter(location != "Southwest Nebraska / Southeast Wyoming")
 
 corn %<>% group_by(location) %>%
     mutate(price_lag = lag(bid_avg),
            price_diff = round(bid_avg - price_lag, 4),
            diff_pct = round(price_diff / bid_avg, 4),
-           price_inc = sign(diff_pct))
+           price_inc = sign(diff_pct)) %>% 
+    ungroup()
+
+corn$price_inc = with(corn, factor(price_inc)) %>% as.ordered() 
 
 ```
 
@@ -135,12 +140,32 @@ dmc = dm %>% group_by(year, month, ams_corn_region)  %>%
     select(-FIPS) %>% 
     arrange(year, month) 
 
-dmh %<>% group_by(ams_hay_region) %>% make_lags( vars(D0, D1, D2, D3, D4, D2plus), 4)
-dmc %<>% group_by(ams_corn_region) %>% make_lags( vars(D0, D1, D2, D3, D4, D2plus), 4)
+dmh %<>% group_by(ams_hay_region) %>%
+    mutate(drought_area_pct = 100 * (D2+D3+D4) / max(None),
+           dry_area = 100 * (D0+D1+D2+D3+D4) / max(None)) %>% 
+    make_lags( vars(D0, D1, D2, D3, D4, D2plus), 4)
+dmc %<>% group_by(ams_corn_region) %>%
+    mutate(dry_area = 100 * (D0+D1+D2+D3+D4) / max(None),
+           drought_area_pct = 100 * (D2+D3+D4) / max(None)) %>% 
+    make_lags( vars(D0, D1, D2, D3, D4, D2plus), 4)
+
+dmh %<>% mutate(date = as.Date(paste(year, month, "01", sep = '-')),
+    time_period = case_when(date <= as.Date("2005-04-30") ~ 1,
+                                        date <= as.Date("2011-04-30") ~ 2,
+                                        date <= as.Date("2014-10-01") ~ 3,
+                                        date >  as.Date("2014-10-01") ~ 4)) %>% 
+    select(-date)
+
+dmc %<>% mutate(date = as.Date(paste(year, month, "01", sep = '-')),
+    time_period = case_when(date <= as.Date("2005-04-30") ~ 1,
+                                        date <= as.Date("2011-04-30") ~ 2,
+                                        date <= as.Date("2014-10-01") ~ 3,
+                                        date >  as.Date("2014-10-01") ~ 4)) %>% 
+    select(-date)
 ```
 
 ```{r join}
-hay %<>% full_join(dmh, by = c("location" = "ams_hay_region", "year", "month"))
+hay %<>% full_join(dmh, by = c("location" = "ams_hay_region", "year", "month")) %>% arrange(year, month, location)
 corn %<>% full_join(dmc, by = c("location" = "ams_corn_region", "year", "month")) %>% arrange(year, month, location)
 
 rm(dm, dmc, dmh, counties)
@@ -148,9 +173,9 @@ rm(dm, dmc, dmh, counties)
 ```
 
 ```{r write}
-write_csv(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm.csv"))
-saveRDS(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm.Rds"))
-write_csv(corn, directory( "thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm.csv"))
+# write_csv(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm.csv"))
+# write_rds(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm.Rds"))
+# write_csv(corn, directory( "thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm.csv"))
 ```
 
 ```{r}
@@ -199,8 +224,9 @@ corn %<>% full_join(spei3) %>% filter(!is.na(bid_avg))
 
 ```{r}
 write_csv(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.csv"))
-saveRDS(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.Rds"))
+write_rds(hay, directory( "thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.Rds"))
 write_csv(corn, directory( "thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm_spei.csv"))
+write_rds(corn, directory( "thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm_spei.Rds"))
 ```
 
 ```{r}

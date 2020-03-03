@@ -1,0 +1,39 @@
+---
+title: "Regional Differences"
+author: "Miles Rollison"
+date: "3/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=F, include = F)
+
+#library(reticulate)
+#Sys.setenv(RETICULATE_PYTHON =  ".venv/bin/python")
+
+library(tidyverse)
+library(magrittr)
+fakepath = "/home/user1/workspace/"
+directory = function(x){paste0(fakepath, x)}
+
+```
+
+```{r}
+hay = read_rds(directory("thesis/Data/Constructed Datasets/hay_co_monthly_ams_dm_spei.Rds")) %>% 
+    filter( month > 4 & month < 10, class != "MIXED GRASS") 
+corn = read_csv(directory("thesis/Data/Constructed Datasets/corn_co_monthly_ams_dm_spei.csv")) %>% 
+    filter(price_inc != 0, month > 4 & month < 10) %>%  #filter out 12 obs with no price change 
+    mutate(price_inc = case_when(price_inc > 0 ~ 1,
+                                 TRUE ~ 0) %>% as.factor())
+```
+
+```{r include = T}
+hay %>% filter(class == "ALFALFA", !is.na(price_diff_adj)) %>% 
+    group_by(location, time_period) %>%
+    summarise_at(vars(bid_avg, price_diff_adj), .funs = c(mean = mean, sd = sd, median = median)) %>%
+    select( location, time_period,sort(names(.))) %>%
+    arrange(time_period) %>%
+    gt::gt()
+```
+
+

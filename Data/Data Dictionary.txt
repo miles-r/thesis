@@ -12,3 +12,8 @@ price_inc:       price increase or decrease 1 : increase; -1 : decrease; 0 : no 
 price_dev:       diff_pct_adj measured in standard deviations
 dev_cat:         price_dev as categorical variable with categories
 
+Drought Variables:
+
+D2_plus:	  area with classification of D2, D3, or D4
+drought_area_pct: percentage of area in a particular region classified as D2 or higher
+dry_area_pct:	  percentage of area in a particular region classified as D0 or higher
